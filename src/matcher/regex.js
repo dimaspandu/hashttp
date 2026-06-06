@@ -11,7 +11,7 @@
  */
 export function templateToRegex(template) {
   const paramNames = [];
-  let pattern = '';
+  let pattern = "";
   let lastIndex = 0;
 
   // Process template to build regex pattern
@@ -21,18 +21,18 @@ export function templateToRegex(template) {
   while ((match = paramRegex.exec(template)) !== null) {
     // Add escaped part before the param
     const before = template.substring(lastIndex, match.index);
-    pattern += before.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    pattern += before.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
     
     // Add capture group for param
     paramNames.push(match[1]);
-    pattern += '([^/]+)';
+    pattern += "([^/]+)";
     
     lastIndex = match.index + match[0].length;
   }
 
   // Add remaining escaped part
   const remaining = template.substring(lastIndex);
-  pattern += remaining.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+  pattern += remaining.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
 
   pattern = `^${pattern}$`;
   return {

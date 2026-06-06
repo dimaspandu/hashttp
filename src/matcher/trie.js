@@ -22,7 +22,7 @@ export function createNode() {
  * @param {*} pointer - Route target (file, folder, or handler object)
  */
 export function insertRoute(root, path, pointer) {
-  const segments = path.split('/').filter(Boolean);
+  const segments = path.split("/").filter(Boolean);
   let node = root;
 
   for (const segment of segments) {
@@ -42,12 +42,12 @@ export function insertRoute(root, path, pointer) {
  * @param {*} pointer - Route target
  */
 export function insertDynamicRoute(root, path, pointer) {
-  const segments = path.split('/').filter(Boolean);
+  const segments = path.split("/").filter(Boolean);
   let node = root;
 
   for (const segment of segments) {
-    const isParam = segment.startsWith(':');
-    const key = isParam ? ':param' : segment;
+    const isParam = segment.startsWith(":");
+    const key = isParam ? ":param" : segment;
 
     if (!node.children.has(key)) {
       node.children.set(key, createNode());
@@ -58,7 +58,7 @@ export function insertDynamicRoute(root, path, pointer) {
   if (!node.param) {
     node.param = {
       pointer,
-      paramNames: segments.filter((s) => s.startsWith(':')).map((s) => s.substring(1)),
+      paramNames: segments.filter((s) => s.startsWith(":")).map((s) => s.substring(1)),
     };
   }
 }
@@ -70,7 +70,7 @@ export function insertDynamicRoute(root, path, pointer) {
  * @returns {Object|null} Match info or null
  */
 export function matchPath(root, path) {
-  const segments = path.split('/').filter(Boolean);
+  const segments = path.split("/").filter(Boolean);
   let node = root;
   const capturedParams = {};
 
@@ -82,8 +82,8 @@ export function matchPath(root, path) {
       node = node.children.get(segment);
     }
     // Then try param match
-    else if (node.children.has(':param')) {
-      const paramNode = node.children.get(':param');
+    else if (node.children.has(":param")) {
+      const paramNode = node.children.get(":param");
       // Track the param name from this level
       node = paramNode;
     } else {
@@ -119,7 +119,7 @@ export function createTrieMatcher(routes) {
   const root = createNode();
 
   for (const [routeKey, pointer] of Object.entries(routes)) {
-    if (routeKey.includes(':')) {
+    if (routeKey.includes(":")) {
       insertDynamicRoute(root, routeKey, pointer);
     } else {
       insertRoute(root, routeKey, pointer);

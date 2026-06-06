@@ -3,10 +3,10 @@
  * Main entry point
  */
 
-import { createHashMatcher } from './matcher/hash.js';
-import { createRegexMatcher } from './matcher/regex.js';
-import { createTrieMatcher } from './matcher/trie.js';
-import { getContentType } from './contentType.js';
+import { createHashMatcher } from "./matcher/hash.js";
+import { createRegexMatcher } from "./matcher/regex.js";
+import { createTrieMatcher } from "./matcher/trie.js";
+import { getContentType } from "./contentType.js";
 
 const ROUTE_THRESHOLD_FOR_TRIE = 20;
 
@@ -20,7 +20,7 @@ function separateRoutes(routes) {
   const dynamic = {};
 
   for (const [key, pointer] of Object.entries(routes)) {
-    if (key.includes(':')) {
+    if (key.includes(":")) {
       dynamic[key] = pointer;
     } else {
       exact[key] = pointer;
@@ -36,8 +36,8 @@ function separateRoutes(routes) {
  * @returns {Object} Router instance with match() and resolve() methods
  */
 function hashttp(routesObject) {
-  if (!routesObject || typeof routesObject !== 'object') {
-    throw new Error('routesObject must be a valid object');
+  if (!routesObject || typeof routesObject !== "object") {
+    throw new Error("routesObject must be a valid object");
   }
 
   const routes = routesObject;
@@ -70,7 +70,7 @@ function hashttp(routesObject) {
      * @returns {Object|null} Match result or null
      */
     match(path) {
-      if (!path || typeof path !== 'string') {
+      if (!path || typeof path !== "string") {
         return null;
       }
 
@@ -99,10 +99,10 @@ function hashttp(routesObject) {
       }
 
       // Try fallback route (*)
-      if (routes['*']) {
+      if (routes["*"]) {
         return {
-          routeKey: '*',
-          pointer: routes['*'],
+          routeKey: "*",
+          pointer: routes["*"],
           params: {},
         };
       }
@@ -116,7 +116,7 @@ function hashttp(routesObject) {
      * @returns {Object} { target, headers, contentType }
      */
     resolve(pointer) {
-      if (typeof pointer === 'string') {
+      if (typeof pointer === "string") {
         return {
           target: pointer,
           headers: {},
@@ -124,17 +124,18 @@ function hashttp(routesObject) {
         };
       }
 
-      if (typeof pointer === 'object' && pointer.target) {
+      if (typeof pointer === "object" && pointer.target) {
         const headers = pointer.headers || {};
-        const contentType = headers['Content-Type'] || getContentType(pointer.target);
+        const contentType = headers["Content-Type"] || getContentType(pointer.target);
         return {
           target: pointer.target,
           headers,
           contentType,
+          status: typeof pointer.status === "number" ? pointer.status : 200,
         };
       }
 
-      throw new Error('Invalid pointer format');
+      throw new Error("Invalid pointer format");
     },
 
     /**
@@ -146,7 +147,7 @@ function hashttp(routesObject) {
         totalRoutes: Object.keys(routes).length,
         exactRoutes: Object.keys(exact).length,
         dynamicRoutes: Object.keys(dynamic).length,
-        matcherStrategy: totalRoutes > ROUTE_THRESHOLD_FOR_TRIE ? 'trie' : 'hash+regex',
+        matcherStrategy: totalRoutes > ROUTE_THRESHOLD_FOR_TRIE ? "trie" : "hash+regex",
       };
     },
   };

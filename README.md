@@ -25,7 +25,7 @@ Perfect for SEO-friendly SPAs or vanilla websites with dynamic routes.
     "headers": { "Content-Type": "application/json" }
   },
   "/storage/:file": "public/storage/[file]",
-  "*": "public/404.html"
+  "*": { "target": "public/404.html", "status": 404 }
 }
 ```
 

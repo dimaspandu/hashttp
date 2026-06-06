@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2026-06-06
+### Changed
+- Added explanatory comment for the unmatched-route guard in `demo/server.js`.
+
 ## [1.0.0] - 2026-06-06
 ### Added
 - Initial release of Hashttp routing engine.
