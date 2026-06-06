@@ -60,6 +60,22 @@ async function servePublicFile(requestPath) {
   if (!resolvedPath.startsWith(publicRoot + path.sep) && resolvedPath !== publicRoot) {
     return null;
   }
+  // If requested path has no extension, try appending .html first
+  const hasExt = path.extname(resolvedPath) !== "";
+  if (!hasExt) {
+    const htmlPath = resolvedPath + ".html";
+    try {
+      const htmlStat = await fs.stat(htmlPath);
+      if (htmlStat.isFile()) {
+        return {
+          filePath: htmlPath,
+          contentType: getContentType(htmlPath),
+        };
+      }
+    } catch (e) {
+      // ignore and continue to other checks
+    }
+  }
 
   try {
     const stat = await fs.stat(resolvedPath);
