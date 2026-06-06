@@ -122,6 +122,8 @@ npm run demo
 node demo/server.js
 ```
 
+Note: the demo now attempts a `.html` fallback for extensionless requests. For example, requesting `/articles` will try to serve `public/articles.html` before falling back to the router or returning 404.
+
 ## API Reference
 
 ### `hashttp(routesObject)`

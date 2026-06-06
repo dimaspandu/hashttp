@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 - Updated README to describe the new demo behavior.
 - Kept dynamic `/articles/:slug` and `/storage/:file` routes as router-only fallbacks.
 
+## [1.0.5] - 2026-06-06
+### Fixed
+- Demo: serve extensionless paths by trying `<path>.html` before other checks (e.g., `/articles` → `public/articles.html`).
+
+
 ## [1.0.3] - 2026-06-06
 ### Changed
 - Added explanatory comment for the unmatched-route guard in `demo/server.js`.
