@@ -1,0 +1,25 @@
+{
+  "name": "hashttp",
+  "version": "0.1.0",
+  "description": "Minimal, dependency-free routing engine for mapping routes to files and resources",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node test/matcher.test.js",
+    "demo": "node demo/server.js"
+  },
+  "keywords": [
+    "router",
+    "routing",
+    "file-serving",
+    "spa",
+    "static",
+    "minimal",
+    "lightweight"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=12.0.0"
+  }
+}
