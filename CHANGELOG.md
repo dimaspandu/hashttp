@@ -2,14 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.3] - 2026-06-06
+## [1.0.4] - 2026-06-06
 ### Changed
-- Added `folder: true` route pointer support for prefix-based folder serving.
-- Updated demo route `/docs` to use folder route semantics and serve nested files from `demo/public/docs`.
-- Updated README to reflect folder routes and current project state.
-- Added demo docs files `demo/public/docs/version.md` and `demo/public/docs/guide.html`.
+- Simplified demo server to serve `demo/public` first, then fall back to dynamic routes and `*`.
+- Updated README to describe the new demo behavior.
+- Kept dynamic `/articles/:slug` and `/storage/:file` routes as router-only fallbacks.
 
-## [1.0.2] - 2026-06-06
+## [1.0.3] - 2026-06-06
 ### Changed
 - Added explanatory comment for the unmatched-route guard in `demo/server.js`.
 

@@ -114,7 +114,7 @@ node test/matcher.test.js
 
 ### Running Demo
 
-Start the demo server which serves `demo/public` and shows static, dynamic, JSON, and folder routes:
+Start the demo server which serves `demo/public` first. If a requested file exists there, it is served directly; otherwise the router is used for dynamic routes and the fallback `*` route.
 
 ```bash
 npm run demo
