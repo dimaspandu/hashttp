@@ -1,1 +1,31 @@
-body { font-family: Arial, sans-serif; background: #fff; color: #111; }
+body {
+  font-family: Arial, sans-serif;
+  background: #f7f9fc;
+  color: #111;
+  margin: 0;
+  padding: 24px;
+}
+
+h1 {
+  color: #1a1f3b;
+}
+
+nav ul {
+  padding-left: 20px;
+}
+
+nav a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+pre {
+  background: #eef2fb;
+  border: 1px solid #ccd6e9;
+  padding: 12px;
+  overflow-x: auto;
+}

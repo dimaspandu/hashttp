@@ -2,10 +2,32 @@
   <head>
     <meta charset="utf-8" />
     <title>Hashttp Demo</title>
+    <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <h1>Hashttp Demo: Home</h1>
     <p>This is the homepage served by demo server.</p>
-    <a href="/articles">Articles</a>
+    <nav>
+      <ul>
+        <li><a href="/articles">Articles</a></li>
+        <li><a href="/docs">Docs folder</a></li>
+        <li><a href="/storage/hello.txt">Storage file</a></li>
+        <li><a href="/data.json">Raw JSON</a></li>
+      </ul>
+    </nav>
+    <section>
+      <h2>Live JSON fetched from <code>/data.json</code></h2>
+      <pre id="json-output">Loading...</pre>
+    </section>
+    <script>
+      fetch('/data.json')
+        .then((res) => res.json())
+        .then((json) => {
+          document.getElementById('json-output').textContent = JSON.stringify(json, null, 2);
+        })
+        .catch(() => {
+          document.getElementById('json-output').textContent = 'Failed to load /data.json';
+        });
+    </script>
   </body>
 </html>
