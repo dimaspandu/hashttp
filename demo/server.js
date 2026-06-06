@@ -11,7 +11,7 @@ const routes = {
   "/": "public/index.html",
   "/articles": "public/articles.html",
   "/articles/:slug": "public/articles/hello-world.html",
-  "/docs": "public/docs",
+  "/docs": { target: "public/docs", folder: true },
   "/style.css": "public/style.css",
   "/data.json": { target: "public/data.json", headers: { "Content-Type": "application/json" } },
   "/storage/:file": "public/storage/[file]", // folder-like route: /storage/hello.txt
@@ -20,9 +20,17 @@ const routes = {
 
 const router = hashttp(routes);
 
-async function mapTargetToFile(target, params = {}) {
+async function mapTargetToFile(target, requestPath, routeKey, isFolderRoute, params = {}) {
   if (!target || typeof target !== "string") return null;
   let filename = target;
+
+  if (isFolderRoute && routeKey && requestPath && requestPath !== routeKey) {
+    const relative = requestPath.slice(routeKey.length).replace(/^\//, "");
+    if (relative) {
+      filename = path.join(filename, relative);
+    }
+  }
+
   // Replace [param] placeholders
   filename = filename.replace(/\[([a-zA-Z0-9_]+)\]/g, (_, name) => params[name] || "");
   const resolvedPath = path.resolve(demoRoot, filename);
@@ -61,7 +69,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   const resolved = router.resolve(match.pointer);
-  const fileDetails = await mapTargetToFile(resolved.target, match.params);
+  const fileDetails = await mapTargetToFile(resolved.target, p, match.routeKey, resolved.folder, match.params);
 
   try {
     const data = await fs.readFile(fileDetails.filePath);

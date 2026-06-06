@@ -2,14 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.2] - 2026-06-06
+## [1.0.3] - 2026-06-06
 ### Changed
-- Updated demo server to resolve route targets relative to `demo/`, allowing `public/...` paths without `demo/` prefix.
-- Added folder-serving behavior for demo routes that point to directories, resolving to `index.html` inside the folder.
-- Added `/docs` demo route and sample `demo/public/docs/index.html`.
-- Improved demo HTML and CSS so the home page loads styles, shows JSON fetch results, and links to folder-like assets.
+- Added `folder: true` route pointer support for prefix-based folder serving.
+- Updated demo route `/docs` to use folder route semantics and serve nested files from `demo/public/docs`.
+- Updated README to reflect folder routes and current project state.
+- Added demo docs files `demo/public/docs/version.md` and `demo/public/docs/guide.html`.
 
-## [1.0.1] - 2026-06-06
+## [1.0.2] - 2026-06-06
 ### Changed
 - Added explanatory comment for the unmatched-route guard in `demo/server.js`.
 

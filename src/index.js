@@ -18,16 +18,27 @@ const ROUTE_THRESHOLD_FOR_TRIE = 20;
 function separateRoutes(routes) {
   const exact = {};
   const dynamic = {};
+  const folders = {};
 
   for (const [key, pointer] of Object.entries(routes)) {
+    if (key === "*") {
+      continue;
+    }
+
     if (key.includes(":")) {
       dynamic[key] = pointer;
-    } else {
-      exact[key] = pointer;
+      continue;
     }
+
+    if (typeof pointer === "object" && pointer?.folder === true) {
+      folders[key] = pointer;
+      continue;
+    }
+
+    exact[key] = pointer;
   }
 
-  return { exact, dynamic };
+  return { exact, dynamic, folders };
 }
 
 /**
@@ -41,7 +52,7 @@ function hashttp(routesObject) {
   }
 
   const routes = routesObject;
-  const { exact, dynamic } = separateRoutes(routes);
+  const { exact, dynamic, folders } = separateRoutes(routes);
 
   // Select matching strategy based on route count
   let exactMatcher = null;
@@ -98,6 +109,20 @@ function hashttp(routesObject) {
         }
       }
 
+      // Try folder route matches after exact and dynamic
+      if (Object.keys(folders).length > 0) {
+        const folderKeys = Object.keys(folders).sort((a, b) => b.length - a.length);
+        for (const folderKey of folderKeys) {
+          if (path === folderKey || path.startsWith(`${folderKey}/`)) {
+            return {
+              routeKey: folderKey,
+              pointer: folders[folderKey],
+              params: { tail: path.slice(folderKey.length) },
+            };
+          }
+        }
+      }
+
       // Try fallback route (*)
       if (routes["*"]) {
         return {
@@ -113,7 +138,7 @@ function hashttp(routesObject) {
     /**
      * Resolve pointer to target info
      * @param {string|Object} pointer - Route pointer
-     * @returns {Object} { target, headers, contentType }
+     * @returns {Object} { target, headers, contentType, status, folder }
      */
     resolve(pointer) {
       if (typeof pointer === "string") {
@@ -121,6 +146,8 @@ function hashttp(routesObject) {
           target: pointer,
           headers: {},
           contentType: getContentType(pointer),
+          status: 200,
+          folder: false,
         };
       }
 
@@ -132,6 +159,7 @@ function hashttp(routesObject) {
           headers,
           contentType,
           status: typeof pointer.status === "number" ? pointer.status : 200,
+          folder: pointer.folder === true,
         };
       }
 
@@ -147,6 +175,7 @@ function hashttp(routesObject) {
         totalRoutes: Object.keys(routes).length,
         exactRoutes: Object.keys(exact).length,
         dynamicRoutes: Object.keys(dynamic).length,
+        folderRoutes: Object.keys(folders).length,
         matcherStrategy: totalRoutes > ROUTE_THRESHOLD_FOR_TRIE ? "trie" : "hash+regex",
       };
     },

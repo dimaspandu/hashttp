@@ -8,8 +8,9 @@ Perfect for SEO-friendly SPAs or vanilla websites with dynamic routes.
 - Point routes to files or folders (publish folder contents)
 - Flat routes object (hashtable-like) as input
 - Auto content-type detection based on file extension
-- Route pointer can be string path or object `{ "source": ..., "headers": {...} }`
-- Support dynamic routes (placeholders) and fallback `*`
+- Route pointer can be string path or object `{ "target": ..., "headers": {...}, "folder": true }`
+- Support dynamic routes (placeholders) and folder prefix routes
+- Fallback route support with `*`
 - Smart matching engine: hash/regex/trie (auto-selected based on route count)
 
 ## Route Examples
@@ -19,6 +20,7 @@ Perfect for SEO-friendly SPAs or vanilla websites with dynamic routes.
   "/": "public/index.html",
   "/articles": "public/articles.html",
   "/articles/:slug": "public/articles/[slug].html",
+  "/docs": { "target": "public/docs", "folder": true },
   "/style.css": "public/style.css",
   "/data.json": {
     "target": "public/data.json",
@@ -31,17 +33,19 @@ Perfect for SEO-friendly SPAs or vanilla websites with dynamic routes.
 
 ## Route Notes
 
-- **String**: pointer to file or folder using an explicit target path
-- **Object**: `{ "target": string, "headers": { ... } }` to override headers/content-type
-- **`*`**: fallback for unmatched requests
-- **Dynamic param**: uses `:name` syntax (e.g., `:slug`) — simple and explicit
+- **String**: pointer to file or folder using an explicit target path.
+- **Object**: use `{ "target": string, "headers": { ... } }` to override headers/content-type.
+- **Folder route**: use `{ "target": string, "folder": true }` for prefix-based folder serving.
+- **`*`**: fallback for unmatched requests.
+- **Dynamic param**: uses `:name` syntax (e.g., `:slug`) — simple and explicit.
 
 ## API
 
 - `hashttp(routesObject)` — main function accepts a flat route map.
-  - `routesObject`: flat object mapping routes to files/targets
+  - `routesObject`: flat object mapping routes to files/targets.
   - Returns instance with methods: `match(path)`, `resolve(pointer)`, and `info()`.
   - `match(path)` returns `{ routeKey, pointer, params }` or `null`.
+  - `resolve(pointer)` now returns `{ target, headers, contentType, status, folder }`.
 
 ## Architecture & Algorithms
 
@@ -110,7 +114,7 @@ node test/matcher.test.js
 
 ### Running Demo
 
-Start the demo server which serves `demo/public` and shows static, dynamic and JSON routes:
+Start the demo server which serves `demo/public` and shows static, dynamic, JSON, and folder routes:
 
 ```bash
 npm run demo

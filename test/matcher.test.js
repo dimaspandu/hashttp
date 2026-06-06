@@ -116,6 +116,17 @@ const resolvedObj = router.resolve({
 });
 assertEquals(resolvedObj.contentType, "application/json", "Integration: resolve with explicit headers");
 
+const folderRouter = hashttp({
+  "/docs": { target: "docs", folder: true },
+});
+const folderMatch1 = folderRouter.match("/docs");
+assertEquals(folderMatch1?.routeKey, "/docs", "Folder route: match /docs");
+assertEquals(folderMatch1?.params, { tail: "" }, "Folder route: empty tail for root");
+assertEquals(folderRouter.resolve(folderMatch1.pointer).folder, true, "Folder route: resolve preserves folder flag");
+const folderMatch2 = folderRouter.match("/docs/version.md");
+assertEquals(folderMatch2?.routeKey, "/docs", "Folder route: prefix match /docs/version.md");
+assertEquals(folderMatch2?.params, { tail: "/version.md" }, "Folder route: capture tail path");
+
 console.log("\n=== Router Info ===\n");
 const info = router.info();
 console.log(`Total routes: ${info.totalRoutes}`);
