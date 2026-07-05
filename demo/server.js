@@ -23,6 +23,9 @@ const routes = {
     ],
     data: { title: "Composed Page", message: "This page is composed!" }
   },
+  "/simple-composed": {
+    target: ["public/header.html", "public/footer.html"]
+  },
   "*": { target: "public/404.html", status: 404 },
 };
 

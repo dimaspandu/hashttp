@@ -145,6 +145,12 @@ const resolvedComposed = composedRouter.resolve(composedRouter.match("/composed"
 assertEquals(Array.isArray(resolvedComposed.target), true, "Integration: composed route has array target");
 assertEquals(resolvedComposed.isComposed, true, "Integration: composed route flag set");
 
+const simpleComposedRouter = hashttp({
+  "/simple-composed": { target: ["header.html", "footer.html"] },
+});
+const resolvedSimpleComposed = simpleComposedRouter.resolve(simpleComposedRouter.match("/simple-composed").pointer);
+assertEquals(resolvedSimpleComposed.data, null, "Integration: composed route without data has null");
+
 console.log("\n=== Router Info ===\n");
 const info = router.info();
 console.log(`Total routes: ${info.totalRoutes}`);
