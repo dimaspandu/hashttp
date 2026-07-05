@@ -12,8 +12,8 @@ const routes = {
   "/": "public/index.html",
   "/articles/:slug": { target: "public/articles/[slug].html", data: { title: "Article" } },
   "/storage/:file": "public/storage/[file]",
-  "/template": { 
-    target: "public/template.html", 
+  "/render": { 
+    target: "public/render-template.html", 
     data: { title: "Template Demo", message: "Hello from hashttp!", user: { name: "John", email: "john@example.com" } } 
   },
   "/composed": {
