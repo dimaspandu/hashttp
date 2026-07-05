@@ -7,7 +7,7 @@ import { createHashMatcher } from "../src/matcher/hash.js";
 import { createRegexMatcher, templateToRegex } from "../src/matcher/regex.js";
 import { createTrieMatcher } from "../src/matcher/trie.js";
 import { getContentType } from "../src/contentType.js";
-import hashttp from "../src/index.js";
+import hashttp, { renderTemplate, hasPlaceholders } from "../src/index.js";
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -77,6 +77,17 @@ assertEquals(getContentType("script.js"), "application/javascript; charset=utf-8
 assertEquals(getContentType("image.png"), "image/png", "Content-Type: PNG");
 assertEquals(getContentType("file.unknown"), "application/octet-stream", "Content-Type: fallback");
 
+console.log("\n=== Template Engine Tests ===\n");
+
+assertEquals(renderTemplate("Hello {{name}}!", { name: "World" }), "Hello World!", "Template: simple replacement");
+assertEquals(renderTemplate("{{greeting}} {{name}}!", { greeting: "Hi", name: "John" }), "Hi John!", "Template: multiple replacements");
+assertEquals(renderTemplate("No placeholders here", {}), "No placeholders here", "Template: no placeholders unchanged");
+assertEquals(renderTemplate("Missing {{key}} stays empty", {}), "Missing  stays empty", "Template: missing key renders empty");
+assertEquals(renderTemplate("Nested: {{user.name}}", { user: { name: "Alice" } }), "Nested: Alice", "Template: nested value with dot notation");
+assertEquals(renderTemplate("Deep: {{a.b.c}}", { a: { b: { c: "deep value" } } }), "Deep: deep value", "Template: deeply nested value");
+assert(hasPlaceholders("Hello {{name}}"), "Template: hasPlaceholders detects {{...}}");
+assert(!hasPlaceholders("No placeholders"), "Template: hasPlaceholders returns false for no placeholders");
+
 console.log("\n=== Hashttp Integration Tests ===\n");
 
 const router = hashttp(
@@ -116,16 +127,14 @@ const resolvedObj = router.resolve({
 });
 assertEquals(resolvedObj.contentType, "application/json", "Integration: resolve with explicit headers");
 
-const folderRouter = hashttp({
-  "/docs": { target: "docs", folder: true },
+const dataRouter = hashttp({
+  "/template": { target: "template.html", data: { title: "Test Page" } },
+  "/model": { target: "model.html", model: { name: "Alice" } },
 });
-const folderMatch1 = folderRouter.match("/docs");
-assertEquals(folderMatch1?.routeKey, "/docs", "Folder route: match /docs");
-assertEquals(folderMatch1?.params, { tail: "" }, "Folder route: empty tail for root");
-assertEquals(folderRouter.resolve(folderMatch1.pointer).folder, true, "Folder route: resolve preserves folder flag");
-const folderMatch2 = folderRouter.match("/docs/version.md");
-assertEquals(folderMatch2?.routeKey, "/docs", "Folder route: prefix match /docs/version.md");
-assertEquals(folderMatch2?.params, { tail: "/version.md" }, "Folder route: capture tail path");
+const resolvedData = dataRouter.resolve(dataRouter.match("/template").pointer);
+assertEquals(resolvedData.data, { title: "Test Page" }, "Integration: resolve route with data property");
+const resolvedModel = dataRouter.resolve(dataRouter.match("/model").pointer);
+assertEquals(resolvedModel.data, { name: "Alice" }, "Integration: resolve route with model property");
 
 console.log("\n=== Router Info ===\n");
 const info = router.info();

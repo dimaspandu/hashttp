@@ -7,6 +7,7 @@ import { createHashMatcher } from "./matcher/hash.js";
 import { createRegexMatcher } from "./matcher/regex.js";
 import { createTrieMatcher } from "./matcher/trie.js";
 import { getContentType } from "./contentType.js";
+import { renderTemplate } from "./template.js";
 
 const ROUTE_THRESHOLD_FOR_TRIE = 20;
 
@@ -141,30 +142,32 @@ function hashttp(routesObject) {
      * @returns {Object} { target, headers, contentType, status, folder }
      */
     resolve(pointer) {
-      if (typeof pointer === "string") {
-        return {
-          target: pointer,
-          headers: {},
-          contentType: getContentType(pointer),
-          status: 200,
-          folder: false,
-        };
-      }
+       if (typeof pointer === "string") {
+         return {
+           target: pointer,
+           headers: {},
+           contentType: getContentType(pointer),
+           status: 200,
+           folder: false,
+           data: null,
+         };
+       }
 
-      if (typeof pointer === "object" && pointer.target) {
-        const headers = pointer.headers || {};
-        const contentType = headers["Content-Type"] || getContentType(pointer.target);
-        return {
-          target: pointer.target,
-          headers,
-          contentType,
-          status: typeof pointer.status === "number" ? pointer.status : 200,
-          folder: pointer.folder === true,
-        };
-      }
+       if (typeof pointer === "object" && pointer?.target) {
+         const headers = pointer.headers || {};
+         const contentType = headers["Content-Type"] || getContentType(pointer.target);
+         return {
+           target: pointer.target,
+           headers,
+           contentType,
+           status: typeof pointer.status === "number" ? pointer.status : 200,
+           folder: pointer.folder === true,
+           data: pointer.data || pointer.model || null,
+         };
+       }
 
-      throw new Error("Invalid pointer format");
-    },
+       throw new Error("Invalid pointer format");
+     },
 
     /**
      * Get info about the router
@@ -179,7 +182,18 @@ function hashttp(routesObject) {
         matcherStrategy: totalRoutes > ROUTE_THRESHOLD_FOR_TRIE ? "trie" : "hash+regex",
       };
     },
+
+    /**
+     * Render template content with data
+     * @param {string} content - Template content with {{placeholders}}
+     * @param {Object} data - Data to inject
+     * @returns {string} Rendered content
+     */
+    render(content, data) {
+      return renderTemplate(content, data);
+    },
   };
 }
 
 export default hashttp;
+export { renderTemplate, hasPlaceholders } from "./template.js";

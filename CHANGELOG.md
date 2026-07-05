@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.4] - 2026-06-06
+## [1.0.6] - 2026-07-05
+### Added
+- Built-in template engine with `{{placeholder}}` syntax
+- Dot notation support for nested values (e.g., `{{user.name}}`)
+- Route `data` and `model` properties for template data injection
+- `render(content, data)` method on router instance
+- `hasPlaceholders(content)` utility function
+
+## [1.0.5] - 2026-06-06
 ### Changed
 - Simplified demo server to serve `demo/public` first, then fall back to dynamic routes and `*`.
 - Updated README to describe the new demo behavior.

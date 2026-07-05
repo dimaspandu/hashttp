@@ -9,8 +9,13 @@ const demoRoot = path.dirname(fileURLToPath(import.meta.url));
 const publicRoot = path.resolve(demoRoot, "public");
 
 const routes = {
-  "/articles/:slug": "public/articles/hello-world.html",
+  "/": "public/index.html",
+  "/articles/:slug": { target: "public/articles/[slug].html", data: { title: "Article" } },
   "/storage/:file": "public/storage/[file]", // folder-like route: /storage/hello.txt
+  "/template": { 
+    target: "public/template.html", 
+    data: { title: "Template Demo", message: "Hello from hashttp!", user: { name: "John", email: "john@example.com" } } 
+  },
   "*": { target: "public/404.html", status: 404 },
 };
 
@@ -134,7 +139,14 @@ const server = http.createServer(async (req, res) => {
   const fileDetails = await mapTargetToFile(resolved.target, p, match.routeKey, resolved.folder, match.params);
 
   try {
-    const data = await fs.readFile(fileDetails.filePath);
+    let data = await fs.readFile(fileDetails.filePath);
+    data = data.toString("utf-8");
+    
+    const templateData = { ...match.params, ...(resolved.data || {}) };
+    if (resolved.data || Object.keys(match.params).length > 0) {
+      data = router.render(data, templateData);
+    }
+    
     res.writeHead(resolved.status || 200, {
       "Content-Type": fileDetails.contentType,
       ...resolved.headers,

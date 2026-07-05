@@ -8,10 +8,11 @@ Perfect for SEO-friendly SPAs or vanilla websites with dynamic routes.
 - Point routes to files or folders (publish folder contents)
 - Flat routes object (hashtable-like) as input
 - Auto content-type detection based on file extension
-- Route pointer can be string path or object `{ "target": ..., "headers": {...}, "folder": true }`
+- Route pointer can be string path or object `{ "target": ..., "headers": {...}, "folder": true, "data": {...} }`
 - Support dynamic routes (placeholders) and folder prefix routes
 - Fallback route support with `*`
 - Smart matching engine: hash/regex/trie (auto-selected based on route count)
+- Built-in template engine with `{{placeholder}}` syntax and dot-notation for nested values
 
 ## Route Examples
 
@@ -136,7 +137,48 @@ Create a router instance.
 **Returns:** Router instance with methods:
 - `match(path)` - Match a request path to a route
 - `resolve(pointer)` - Resolve pointer to target info
+- `render(content, data)` - Render template content with data
 - `info()` - Get router statistics
+
+**resolve(pointer) returns:**
+- `{ target, headers, contentType, status, folder, data }` - Route target info with optional data
+
+### Template Engine
+
+Hashttp includes a built-in template engine for injecting data into HTML templates.
+
+**Using `data` property in routes:**
+```javascript
+"/welcome": {
+  "target": "welcome.html",
+  "data": { "title": "Welcome", "user": { "name": "John" } }
+}
+```
+
+**Template syntax in HTML:**
+```html
+<html>
+  <head><title>{{title}}</title></head>
+  <body>
+    <h1>Hello, {{user.name}}!</h1>
+  </body>
+</html>
+```
+
+Rendered output:
+```html
+<html>
+  <head><title>Welcome</title></head>
+  <body>
+    <h1>Hello, John!</h1>
+  </body>
+</html>
+```
+
+- `{{key}}` - Simple value replacement
+- `{{user.name}}` - Nested object access with dot notation
+- Missing keys render as empty string
+- Route params are automatically available as template data
 
 ### Route Pointer Formats
 
@@ -145,11 +187,15 @@ Create a router instance.
 "/style.css": "assets/css/style.css"
 ```
 
-**Object (with explicit headers):**
+**Object (with explicit headers and data):**
 ```javascript
 "/api": {
   "target": "api.handler",
   "headers": { "Content-Type": "application/json" }
+}
+"/welcome": {
+  "target": "welcome.html",
+  "data": { "title": "Welcome", "user": { "name": "John" } }
 }
 ```
 
@@ -184,6 +230,7 @@ hashttp/
 ├── src/
 │   ├── index.js              # Main entry point
 │   ├── contentType.js        # MIME type detection
+│   ├── template.js           # Template engine
 │   └── matcher/
 │       ├── hash.js           # Exact match (O(1))
 │       ├── regex.js          # Dynamic param matching
