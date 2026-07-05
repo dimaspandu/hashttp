@@ -2,7 +2,7 @@
  * Simple template engine with {{curlyBrace}} syntax
  */
 
-const TEMPLATE_PATTERN = /\{\{([a-zA-Z0-9_.]+)\}\}/g;
+const TEMPLATE_REGEX = /\{\{([a-zA-Z0-9_.]+)\}\}/g;
 
 /**
  * Get nested value from object using dot notation
@@ -33,7 +33,8 @@ function getNestedValue(obj, path) {
 export function renderTemplate(content, data = {}) {
   if (typeof content !== "string") return content;
   
-  return content.replace(TEMPLATE_PATTERN, (_, key) => {
+  const pattern = new RegExp(TEMPLATE_REGEX.source, "g");
+  return content.replace(pattern, (_, key) => {
     const value = getNestedValue(data, key);
     return value !== undefined ? String(value) : "";
   });
@@ -45,5 +46,5 @@ export function renderTemplate(content, data = {}) {
  * @returns {boolean} True if contains {{...}}
  */
 export function hasPlaceholders(content) {
-  return typeof content === "string" && TEMPLATE_PATTERN.test(content);
+  return typeof content === "string" && /\{\{([a-zA-Z0-9_.]+)\}\}/.test(content);
 }

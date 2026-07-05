@@ -56,7 +56,7 @@ export async function compose(chunks, context = {}, options = {}) {
 export function renderInPlace(content, data) {
   if (typeof content !== "string") return content;
   
-  const pattern = /\{\{([a-zA-Z0-9_.]+)\}\}/g;
+  const pattern = new RegExp(/\\{\\{([a-zA-Z0-9_.]+)\\}\\}/g.source, "g");
   return content.replace(pattern, (_, key) => {
     const value = getNestedValue(data, key);
     return value !== undefined ? String(value) : "";
