@@ -8,6 +8,7 @@ import { createRegexMatcher } from "./matcher/regex.js";
 import { createTrieMatcher } from "./matcher/trie.js";
 import { getContentType } from "./contentType.js";
 import { renderTemplate } from "./template.js";
+import { compose } from "./compose.js";
 
 const ROUTE_THRESHOLD_FOR_TRIE = 20;
 
@@ -153,18 +154,20 @@ function hashttp(routesObject) {
          };
        }
 
-       if (typeof pointer === "object" && pointer?.target) {
-         const headers = pointer.headers || {};
-         const contentType = headers["Content-Type"] || getContentType(pointer.target);
-         return {
-           target: pointer.target,
-           headers,
-           contentType,
-           status: typeof pointer.status === "number" ? pointer.status : 200,
-           folder: pointer.folder === true,
-           data: pointer.data || pointer.model || null,
-         };
-       }
+if (typeof pointer === "object" && pointer?.target) {
+          const headers = pointer.headers || {};
+          const isArray = Array.isArray(pointer.target);
+          const contentType = headers["Content-Type"] || getContentType(isArray ? "index.html" : pointer.target);
+          return {
+            target: pointer.target,
+            headers,
+            contentType,
+            status: typeof pointer.status === "number" ? pointer.status : 200,
+            folder: pointer.folder === true,
+            data: pointer.data || pointer.model || null,
+            isComposed: isArray,
+          };
+        }
 
        throw new Error("Invalid pointer format");
      },
@@ -197,3 +200,4 @@ function hashttp(routesObject) {
 
 export default hashttp;
 export { renderTemplate, hasPlaceholders } from "./template.js";
+export { compose } from "./compose.js";

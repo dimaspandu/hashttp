@@ -7,7 +7,9 @@ import { createHashMatcher } from "../src/matcher/hash.js";
 import { createRegexMatcher, templateToRegex } from "../src/matcher/regex.js";
 import { createTrieMatcher } from "../src/matcher/trie.js";
 import { getContentType } from "../src/contentType.js";
-import hashttp, { renderTemplate, hasPlaceholders } from "../src/index.js";
+import hashttp, { renderTemplate, hasPlaceholders, compose } from "../src/index.js";
+import fs from "fs/promises";
+import path from "path";
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -135,6 +137,13 @@ const resolvedData = dataRouter.resolve(dataRouter.match("/template").pointer);
 assertEquals(resolvedData.data, { title: "Test Page" }, "Integration: resolve route with data property");
 const resolvedModel = dataRouter.resolve(dataRouter.match("/model").pointer);
 assertEquals(resolvedModel.data, { name: "Alice" }, "Integration: resolve route with model property");
+
+const composedRouter = hashttp({
+  "/composed": { target: ["header.html", "footer.html"], data: { title: "Test", message: "World" } },
+});
+const resolvedComposed = composedRouter.resolve(composedRouter.match("/composed").pointer);
+assertEquals(Array.isArray(resolvedComposed.target), true, "Integration: composed route has array target");
+assertEquals(resolvedComposed.isComposed, true, "Integration: composed route flag set");
 
 console.log("\n=== Router Info ===\n");
 const info = router.info();

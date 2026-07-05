@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.7] - 2026-07-05
+### Added
+- Page composition feature with array target support
+- `compose()` utility function for combining multiple templates/files
+
 ## [1.0.6] - 2026-07-05
 ### Added
 - Built-in template engine with `{{placeholder}}` syntax

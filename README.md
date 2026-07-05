@@ -13,6 +13,7 @@ Perfect for SEO-friendly SPAs or vanilla websites with dynamic routes.
 - Fallback route support with `*`
 - Smart matching engine: hash/regex/trie (auto-selected based on route count)
 - Built-in template engine with `{{placeholder}}` syntax and dot-notation for nested values
+- Page composition: combine multiple templates/files via array target (`["header.html", "main.html"]`)
 
 ## Route Examples
 
@@ -180,6 +181,31 @@ Rendered output:
 - Missing keys render as empty string
 - Route params are automatically available as template data
 
+### Page Composition
+
+Combine multiple templates/files into a single response:
+
+```javascript
+"/page": {
+  "target": ["public/header.html", "public/main.html", "public/footer.html"],
+  "data": { "title": "Page Title" }
+}
+```
+
+Or with inline templates and custom data per chunk:
+
+```javascript
+"/page": {
+  "target": [
+    "public/header.html",
+    { "target": "public/main.html", "data": { "content": "Custom content" } },
+    "public/footer.html"
+  ]
+}
+```
+
+All files are rendered with shared data context, with chunk-specific data overriding where provided.
+
 ### Route Pointer Formats
 
 **String (simple file/folder reference):**
@@ -231,6 +257,7 @@ hashttp/
 │   ├── index.js              # Main entry point
 │   ├── contentType.js        # MIME type detection
 │   ├── template.js           # Template engine
+│   ├── compose.js            # Page composition utility
 │   └── matcher/
 │       ├── hash.js           # Exact match (O(1))
 │       ├── regex.js          # Dynamic param matching

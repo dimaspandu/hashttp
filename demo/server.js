@@ -2,7 +2,7 @@ import http from "http";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import hashttp from "../src/index.js";
+import hashttp, { compose } from "../src/index.js";
 import { getContentType } from "../src/contentType.js";
 
 const demoRoot = path.dirname(fileURLToPath(import.meta.url));
@@ -11,10 +11,17 @@ const publicRoot = path.resolve(demoRoot, "public");
 const routes = {
   "/": "public/index.html",
   "/articles/:slug": { target: "public/articles/[slug].html", data: { title: "Article" } },
-  "/storage/:file": "public/storage/[file]", // folder-like route: /storage/hello.txt
+  "/storage/:file": "public/storage/[file]",
   "/template": { 
     target: "public/template.html", 
     data: { title: "Template Demo", message: "Hello from hashttp!", user: { name: "John", email: "john@example.com" } } 
+  },
+  "/composed": {
+    target: [
+      "public/header.html",
+      "public/footer.html",
+    ],
+    data: { title: "Composed Page", message: "This page is composed!" }
   },
   "*": { target: "public/404.html", status: 404 },
 };
@@ -135,28 +142,38 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const resolved = router.resolve(match.pointer);
-  const fileDetails = await mapTargetToFile(resolved.target, p, match.routeKey, resolved.folder, match.params);
+const resolved = router.resolve(match.pointer);
+   const templateData = { ...match.params, ...(resolved.data || {}) };
+   const isComposed = resolved.isComposed;
 
-  try {
-    let data = await fs.readFile(fileDetails.filePath);
-    data = data.toString("utf-8");
-    
-    const templateData = { ...match.params, ...(resolved.data || {}) };
-    if (resolved.data || Object.keys(match.params).length > 0) {
-      data = router.render(data, templateData);
-    }
-    
-    res.writeHead(resolved.status || 200, {
-      "Content-Type": fileDetails.contentType,
-      ...resolved.headers,
-    });
-    res.end(data);
-  } catch (err) {
-    res.writeHead(404, { "Content-Type": "text/plain" });
-    res.end("Resource not found");
-  }
-});
+   try {
+     if (isComposed) {
+       const data = await compose(resolved.target, templateData, { readFile: fs, pathResolve: path.resolve, basePath: demoRoot });
+       res.writeHead(resolved.status || 200, {
+         "Content-Type": resolved.contentType,
+         ...resolved.headers,
+       });
+       res.end(data);
+     } else {
+       const fileDetails = await mapTargetToFile(resolved.target, p, match.routeKey, resolved.folder, match.params);
+       let data = await fs.readFile(fileDetails.filePath);
+       data = data.toString("utf-8");
+       
+       if (resolved.data || Object.keys(match.params).length > 0) {
+         data = router.render(data, templateData);
+       }
+       
+       res.writeHead(resolved.status || 200, {
+         "Content-Type": fileDetails.contentType,
+         ...resolved.headers,
+       });
+       res.end(data);
+     }
+   } catch (err) {
+     res.writeHead(404, { "Content-Type": "text/plain" });
+     res.end("Resource not found");
+   }
+ });
 
 server.listen(4000, () => {
   console.log("Demo server running at http://localhost:4000");
