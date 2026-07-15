@@ -1,122 +1,125 @@
 # Hashttp
 
-Hashttp — minimal, dependency-free routing engine for mapping routes to files/static resources.
-Perfect for SEO-friendly SPAs or vanilla websites with dynamic routes.
+Hashttp is a minimal, dependency-free routing engine that maps request paths to
+files and templates. It is well suited for SEO-friendly static sites, vanilla
+websites with dynamic routes, and small SPAs. The matching core is
+[`roution`](helpers/roution/README.md), a tiny route-resolution engine with zero
+runtime dependencies.
 
-## Features
+This repository contains two parts:
 
-- Point routes to files or folders (publish folder contents)
-- Flat routes object (hashtable-like) as input
-- Auto content-type detection based on file extension
-- Route pointer can be string path or object `{ "target": ..., "headers": {...}, "folder": true, "data": {...} }`
-- Support dynamic routes (placeholders) and folder prefix routes
-- Fallback route support with `*`
-- Smart matching engine: hash/regex/trie (auto-selected based on route count)
-- Built-in template engine with `{{placeholder}}` syntax and dot-notation for nested values
-- Page composition: combine multiple templates/files via array target (`["header.html", "main.html"]`)
+- `helpers/roution` — the reusable route matcher (`createMatcher`).
+- `demo/` — a runnable, zero-dependency HTTP server that shows how the matcher
+  is wired to file serving, page composition, and templating.
 
-## Route Examples
+## How a request is resolved
 
-```json
-{
-  "/": "public/index.html",
-  "/articles": "public/articles.html",
-  "/articles/:slug": "public/articles/[slug].html",
-  "/docs": { "target": "public/docs", "folder": true },
-  "/style.css": "public/style.css",
-  "/data.json": {
-    "target": "public/data.json",
-    "headers": { "Content-Type": "application/json" }
-  },
-  "/storage/:file": "public/storage/[file]",
-  "*": { "target": "public/404.html", "status": 404 }
+The demo server (`demo/server.js`) resolves each request in three steps:
+
+1. **Static file** — If a matching file exists under `demo/public` and stays
+   within that directory (path-traversal safe), it is streamed directly with a
+   `Content-Type` derived from its extension (`.html`, `.css`, `.json`, ...).
+2. **Route match** — Otherwise the request path is matched against the route
+   table. A match is served in one of three shapes:
+   - a single file (string target),
+   - a composed page (array of chunks), or
+   - a template (object with `target` and `struct`).
+3. **Fallback** — If nothing matches, `demo/public/404.html` is served with a
+   `404` status.
+
+## Route definitions
+
+Routes are a flat object of patterns to values. The matcher values used by the
+demo server come in three shapes:
+
+### String (single file)
+
+```javascript
+"/": "public/index.html"
+```
+
+### Array (page composition)
+
+Each entry is either a file path or an object with its own `struct`. Chunks are
+rendered in order and concatenated into one response.
+
+```javascript
+"/composed": [
+  { "target": "public/header.html", "struct": { "title": "Hello, World!" } },
+  "public/greetings.html",
+  { "target": "public/footer.html", "struct": { "year": new Date().getFullYear() } }
+]
+```
+
+### Object with `struct` (templating)
+
+```javascript
+"/articles": {
+  "target": "public/articles/index.html",
+  "struct": { "title": "Articles" }
 }
 ```
 
-## Route Notes
-
-- **String**: pointer to file or folder using an explicit target path.
-- **Object**: use `{ "target": string, "headers": { ... } }` to override headers/content-type.
-- **Folder route**: use `{ "target": string, "folder": true }` for prefix-based folder serving.
-- **`*`**: fallback for unmatched requests.
-- **Dynamic param**: uses `:name` syntax (e.g., `:slug`) — simple and explicit.
-
-## API
-
-- `hashttp(routesObject)` — main function accepts a flat route map.
-  - `routesObject`: flat object mapping routes to files/targets.
-  - Returns instance with methods: `match(path)`, `resolve(pointer)`, and `info()`.
-  - `match(path)` returns `{ routeKey, pointer, params }` or `null`.
-  - `resolve(pointer)` now returns `{ target, headers, contentType, status, folder }`.
-
-## Architecture & Algorithms
-
-- **Small route counts**: use hash + regex fallback for dynamic matching.
-- **Large route counts**: use trie for prefix/dynamic performance.
-- Matchers are separate modules for easy unit testing: `matcher/hash`, `matcher/regex`, `matcher/trie`.
-
-## Testing
-
-- Matcher modules are isolated so they can be unit-tested independently.
-- `test/` folder contains tests for each algorithm and small integrations.
-
-## Roadmap
-
-- Scaffold `src/` and `test/`
-- Implement basic matchers (hash + regex)
-- Implement trie when routes > threshold
-- Add content-type detection and header pointer handling
-- Example usage in `demo/`
-
-## Quick Start
-
-### Installation
-
-Clone and use directly (no npm install needed):
-
-```bash
-git clone <repo>
-cd hashttp
-```
-
-### Usage (module)
+`struct` may be a plain object or a factory that receives the matched route
+params, which makes it easy to derive values from dynamic segments:
 
 ```javascript
-import hashttp from './src/index.js';
-
-const router = hashttp({
-  "/": "index.html",
-  "/articles/:slug": "articles/[slug].html",
-  "/api": {
-    "target": "api.json",
-    "headers": { "Content-Type": "application/json" }
-  },
-  "*": "404.html"
-});
-
-// Match a route
-const match = router.match('/articles/hello-world');
-console.log(match);
-
-// Resolve pointer to file info
-const resolved = router.resolve(match.pointer);
-console.log(resolved);
-
-// Get router stats
-console.log(router.info());
+"/articles/:slug": {
+  "target": "public/articles/[slug].html",
+  "struct": (params) => ({
+    "slug": params.slug,
+    "title": params.slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  })
+}
 ```
 
-### Running Tests
+## Dynamic routes
 
-```bash
-npm test
-# or
-node test/matcher.test.js
+Use `:name` placeholders (for example `:slug`). Captured values are available as
+`match.params` and can be passed into a `struct` factory.
+
+## Template syntax
+
+Templates use `{{ key }}` placeholders. Missing keys render as an empty string.
+
+```html
+<title>{{title}}</title>
+<h1>{{title}}</h1>
+<p>Slug: {{slug}}</p>
 ```
 
-### Running Demo
+## Project structure
 
-Start the demo server which serves `demo/public` first. If a requested file exists there, it is served directly; otherwise the router is used for dynamic routes and the fallback `*` route.
+```text
+hashttp/
+├── helpers/
+│   └── roution/            # route matcher engine (createMatcher)
+│       ├── src/            # matcher implementation
+│       ├── tests/          # node:test unit tests
+│       └── README.md       # matcher API and usage
+├── demo/
+│   ├── server.js           # demo HTTP server
+│   └── public/             # files served by the demo
+│       ├── index.html      # route "/"
+│       ├── 404.html        # fallback page
+│       ├── style.css       # static asset
+│       ├── data.json       # static JSON
+│       ├── header.html     # composed chunk ({{title}})
+│       ├── footer.html     # composed chunk ({{year}})
+│       ├── greetings.html  # composed chunk
+│       └── articles/
+│           ├── index.html  # route "/articles" ({{title}})
+│           └── [slug].html # route "/articles/:slug" ({{slug}}, {{title}})
+├── package.json
+├── README.md
+├── LICENSE.md
+└── CHANGELOG.md
+```
+
+## Running the demo
+
+The demo serves `demo/public` first, then falls back to the route table, and
+finally to `404.html`.
 
 ```bash
 npm run demo
@@ -124,161 +127,43 @@ npm run demo
 node demo/server.js
 ```
 
-Note: the demo now attempts a `.html` fallback for extensionless requests. For example, requesting `/articles` will try to serve `public/articles.html` before falling back to the router or returning 404.
+Then open <http://localhost:7171/>. Try these paths:
 
-## API Reference
+- `/` — static home page
+- `/articles` — route rendered with a `struct`
+- `/articles/hello-world` — dynamic route rendered from `[slug].html`
+- `/composed` — page composed from header + greetings + footer chunks
+- `/data.json` — static JSON file
+- `/missing-route` — fallback `404.html`
 
-### `hashttp(routesObject)`
+## The roution matcher
 
-Create a router instance.
-
-**Parameters:**
-- `routesObject` (Object): Flat object mapping route paths to targets
-
-**Returns:** Router instance with methods:
-- `match(path)` - Match a request path to a route
-- `resolve(pointer)` - Resolve pointer to target info
-- `render(content, data)` - Render template content with data
-- `info()` - Get router statistics
-
-**resolve(pointer) returns:**
-- `{ target, headers, contentType, status, folder, data }` - Route target info with optional data
-
-### Template Engine
-
-Hashttp includes a built-in template engine for injecting data into HTML templates.
-
-**Using `data` property in routes:**
-```javascript
-"/welcome": {
-  "target": "welcome.html",
-  "data": { "title": "Welcome", "user": { "name": "John" } }
-}
-```
-
-**Template syntax in HTML:**
-```html
-<html>
-  <head><title>{{title}}</title></head>
-  <body>
-    <h1>Hello, {{user.name}}!</h1>
-  </body>
-</html>
-```
-
-Rendered output:
-```html
-<html>
-  <head><title>Welcome</title></head>
-  <body>
-    <h1>Hello, John!</h1>
-  </body>
-</html>
-```
-
-- `{{key}}` - Simple value replacement
-- `{{user.name}}` - Nested object access with dot notation
-- Missing keys render as empty string
-- Route params are automatically available as template data
-
-### Page Composition
-
-Combine multiple templates/files into a single response:
+The demo server depends only on `createMatcher` from
+`helpers/roution/src/roution.js`. The matcher is framework agnostic and runtime
+independent, and supports static lookup, dynamic segments, query parsing, and an
+optional `*` wildcard. See [`helpers/roution/README.md`](helpers/roution/README.md)
+for the full API.
 
 ```javascript
-"/page": {
-  "target": ["public/header.html", "public/main.html", "public/footer.html"],
-  "data": { "title": "Page Title" }
-}
+import { createMatcher } from "./helpers/roution/src/roution.js";
+
+const matcher = createMatcher({
+  "/": "public/index.html",
+  "/articles/:slug": "public/articles/[slug].html",
+  "*": "public/404.html"
+});
+
+matcher.match("/articles/javascript?page=1");
+// { found: true, pathname: "/articles/javascript", route: "/articles/:slug",
+//   params: { slug: "javascript" }, query: { page: "1" },
+//   value: "public/articles/[slug].html" }
 ```
 
-Or with inline templates and custom data per chunk:
+## Design principles
 
-```javascript
-"/page": {
-  "target": [
-    "public/header.html",
-    { "target": "public/main.html", "data": { "content": "Custom content" } },
-    "public/footer.html"
-  ]
-}
-```
-
-All files are rendered with shared data context, with chunk-specific data overriding where provided.
-
-### Route Pointer Formats
-
-**String (simple file/folder reference):**
-```javascript
-"/style.css": "assets/css/style.css"
-```
-
-**Object (with explicit headers and data):**
-```javascript
-"/api": {
-  "target": "api.handler",
-  "headers": { "Content-Type": "application/json" }
-}
-"/welcome": {
-  "target": "welcome.html",
-  "data": { "title": "Welcome", "user": { "name": "John" } }
-}
-```
-
-### Dynamic Routes
-
-Use `:paramName` placeholders:
-```javascript
-"/articles/:slug": "articles/[slug].html"
-"/users/:id/posts/:postId": "users/[id]/posts/[postId].html"
-```
-
-Parameters are captured and returned in `match().params`.
-
-### Fallback Route
-
-Use `*` as a catch-all for unmatched routes:
-```javascript
-"*": "404.html"
-```
-
-## Algorithm Selection
-
-- **< 20 routes**: Hash + Regex (fast exact match, then fallback to regex for params)
-- **≥ 20 routes**: Trie (prefix-based for better performance with many routes)
-
-The algorithm is selected automatically based on route count. View current strategy with `router.info()`.
-
-## Project Structure
-
-```
-hashttp/
-├── src/
-│   ├── index.js              # Main entry point
-│   ├── contentType.js        # MIME type detection
-│   ├── template.js           # Template engine
-│   ├── compose.js            # Page composition utility
-│   └── matcher/
-│       ├── hash.js           # Exact match (O(1))
-│       ├── regex.js          # Dynamic param matching
-│       └── trie.js           # Prefix-based matching
-├── test/
-│   └── matcher.test.js       # Unit tests
-├── demo/
-│   ├── server.js             # Demo server
-│   └── public/               # Demo public files (html, css, json)
-├── package.json
-├── README.md
-├── LICENSE.md
-└── CHANGELOG.md
-```
-
-## Design Principles
-
-- **Zero dependencies**: No npm modules, only built-in Node.js APIs
-- **Minimal code**: Small, readable, maintainable codebase
-- **Modular**: Matchers are separated for easy testing and swapping
-- **Flat config**: Routes object is simple and JSON-serializable
-- **Auto content-type**: Detects MIME type from file extensions
-- **Smart routing**: Automatic algorithm selection for performance
-
+- **Zero dependencies** — only built-in Node.js APIs.
+- **Minimal code** — small, readable, maintainable.
+- **Modular** — the matcher is isolated and unit-tested on its own.
+- **Flat config** — routes are a simple, serializable object.
+- **Auto content-type** — MIME type is detected from the file extension.
+- **Static first** — existing files win; routing is the fallback.

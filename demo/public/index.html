@@ -5,20 +5,24 @@
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <h1>Hashttp Demo: Home</h1>
-    <p>This is the homepage served by demo server.</p>
+    <h1>Hashttp Demo</h1>
+    <p>A minimal, dependency-free router that maps routes to files.</p>
+
     <nav>
       <ul>
-        <li><a href="/articles">Articles</a></li>
-        <li><a href="/docs">Docs folder</a></li>
-        <li><a href="/storage/hello.txt">Storage file</a></li>
-        <li><a href="/data.json">Raw JSON</a></li>
+        <li><a href="/articles">Articles (dynamic route)</a></li>
+        <li><a href="/articles/hello-world">Article: hello-world (template)</a></li>
+        <li><a href="/composed">Composed page (chunked)</a></li>
+        <li><a href="/data.json">Static JSON</a></li>
+        <li><a href="/missing-route">Unmatched route (404)</a></li>
       </ul>
     </nav>
+
     <section>
-      <h2>Live JSON fetched from <code>/data.json</code></h2>
+      <h2>Static file content from <code>/data.json</code></h2>
       <pre id="json-output">Loading...</pre>
     </section>
+
     <script>
       fetch('/data.json')
         .then((res) => res.json())

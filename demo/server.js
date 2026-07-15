@@ -1,184 +1,154 @@
-import http from "http";
-import fs from "fs/promises";
 import path from "path";
-import { fileURLToPath } from "url";
-import hashttp, { compose } from "../src/index.js";
-import { getContentType } from "../src/contentType.js";
+import url from "url";
+import http from "http";
+import fs from "fs";
+import createMatcher from "../helpers/roution/src/roution.js";
 
-const demoRoot = path.dirname(fileURLToPath(import.meta.url));
-const publicRoot = path.resolve(demoRoot, "public");
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const publicDir = path.join(__dirname, "public");
 
 const routes = {
   "/": "public/index.html",
-  "/articles/:slug": { target: "public/articles/[slug].html", data: { title: "Article" } },
-  "/storage/:file": "public/storage/[file]",
-  "/render": { 
-    target: "public/render-template.html", 
-    data: { title: "Template Demo", message: "Hello from hashttp!", user: { name: "John", email: "john@example.com" } } 
+  "/articles": {
+    target: "public/articles/index.html",
+    struct: { title: "Articles" },
   },
-  "/composed": {
-    target: [
-      "public/header.html",
-      "public/footer.html",
-    ],
-    data: { title: "Composed Page", message: "This page is composed!" }
+  "/articles/:slug": {
+    target: "public/articles/[slug].html",
+    // `struct` can be a plain object or a factory that receives the matched params.
+    struct: (params) => ({
+      slug: params.slug,
+      title: params.slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    }),
   },
-  "/simple-composed": {
-    target: ["public/header.html", "public/footer.html"]
-  },
-  "*": { target: "public/404.html", status: 404 },
+  "/composed": [
+    {
+      target: "public/header.html",
+      struct: { title: "Hello, World!" },
+    },
+    "public/greetings.html",
+    {
+      target: "public/footer.html",
+      struct: { year: new Date().getFullYear() },
+    },
+  ],
 };
 
-const router = hashttp(routes);
+const matcher = createMatcher(routes);
 
-async function mapTargetToFile(target, requestPath, routeKey, isFolderRoute, params = {}) {
-  if (!target || typeof target !== "string") return null;
-  let filename = target;
+const typeMap = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript",
+  ".json": "application/json",
+  ".css": "text/css",
+  ".ico": "image/x-icon",
+  ".txt": "text/plain; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+};
 
-  if (isFolderRoute && routeKey && requestPath && requestPath !== routeKey) {
-    const relative = requestPath.slice(routeKey.length).replace(/^\//, "");
-    if (relative) {
-      filename = path.join(filename, relative);
-    }
-  }
+const contentType = (file) =>
+  typeMap[path.extname(file).toLowerCase()] || "application/octet-stream";
 
-  // Replace [param] placeholders
-  filename = filename.replace(/\[([a-zA-Z0-9_]+)\]/g, (_, name) => params[name] || "");
-  const resolvedPath = path.resolve(demoRoot, filename);
-
-  try {
-    const stat = await fs.stat(resolvedPath);
-    if (stat.isDirectory()) {
-      const indexPath = path.join(resolvedPath, "index.html");
-      return {
-        filePath: indexPath,
-        contentType: getContentType(indexPath),
-      };
-    }
-  } catch (err) {
-    // Ignore missing path and try reading as file later.
-  }
-
-  return {
-    filePath: resolvedPath,
-    contentType: getContentType(resolvedPath),
-  };
+// Reject any target that escapes the public directory (path traversal guard).
+function isWithinPublic(target) {
+  const resolved = path.resolve(target);
+  return resolved === publicDir || resolved.startsWith(publicDir + path.sep);
 }
 
-async function servePublicFile(requestPath) {
-  let relativePath = requestPath.replace(/^\//, "");
-  if (!relativePath) {
-    relativePath = "index.html";
-  }
-
-  const resolvedPath = path.resolve(publicRoot, relativePath);
-  if (!resolvedPath.startsWith(publicRoot + path.sep) && resolvedPath !== publicRoot) {
-    return null;
-  }
-  // If requested path has no extension, try appending .html first
-  const hasExt = path.extname(resolvedPath) !== "";
-  if (!hasExt) {
-    const htmlPath = resolvedPath + ".html";
-    try {
-      const htmlStat = await fs.stat(htmlPath);
-      if (htmlStat.isFile()) {
-        return {
-          filePath: htmlPath,
-          contentType: getContentType(htmlPath),
-        };
-      }
-    } catch (e) {
-      // ignore and continue to other checks
-    }
-  }
-
+async function fileExists(filePath) {
   try {
-    const stat = await fs.stat(resolvedPath);
-    if (stat.isFile()) {
-      return {
-        filePath: resolvedPath,
-        contentType: getContentType(resolvedPath),
-      };
-    }
-
-    if (stat.isDirectory()) {
-      const indexPath = path.join(resolvedPath, "index.html");
-      const indexStat = await fs.stat(indexPath);
-      if (indexStat.isFile()) {
-        return {
-          filePath: indexPath,
-          contentType: getContentType(indexPath),
-        };
-      }
-    }
-  } catch (err) {
-    // Ignore missing path and try route fallback later.
+    return (await fs.promises.stat(filePath)).isFile();
+  } catch {
+    return false;
   }
+}
 
-  return null;
+// Resolve a struct definition into a plain data object.
+// A struct may be a literal object or a factory that receives the route params.
+function resolveStruct(struct, params) {
+  if (typeof struct === "function") return struct(params);
+  return struct || {};
+}
+
+// Substitute `{{ key }}` placeholders with values from the data object.
+function renderTemplate(content, data) {
+  return content.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_, key) =>
+    key in data ? String(data[key]) : ""
+  );
+}
+
+// Render a single matcher entry. An entry is either a plain file path (string)
+// or an object of the shape { target, struct }.
+async function renderEntry(entry, params) {
+  const target = typeof entry === "string" ? entry : entry.target;
+  const data = typeof entry === "string" ? {} : resolveStruct(entry.struct, params);
+  const content = await fs.promises.readFile(path.join(__dirname, target), "utf8");
+  return renderTemplate(content, data);
+}
+
+function targetOf(entry) {
+  return typeof entry === "string" ? entry : entry.target;
 }
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, "http://localhost");
-  const p = url.pathname;
+  const requestPath = new URL(req.url, `http://${req.headers.host}`).pathname;
 
-  const publicFile = await servePublicFile(p);
-  if (publicFile) {
-    try {
-      const data = await fs.readFile(publicFile.filePath);
-      res.writeHead(200, { "Content-Type": publicFile.contentType });
-      res.end(data);
-      return;
-    } catch (err) {
-      // Fall back to route handling below if public file read fails.
-    }
-  }
-
-  const match = router.match(p);
-
-  // The router already has a fallback route for unmatched paths via "*".
-  // This guard is an extra safety net if the route table changes or if
-  // the fallback route is removed, ensuring the server still returns 404.
-  if (!match) {
-    res.writeHead(404, { "Content-Type": "text/plain" });
-    res.end("Not found");
+  // 1. Try to serve the request directly from the public folder.
+  //    Safe and existing files are streamed as-is based on their extension.
+  const staticPath = path.join(publicDir, requestPath);
+  if (isWithinPublic(staticPath) && (await fileExists(staticPath))) {
+    res.writeHead(200, {
+      "Content-Type": contentType(staticPath),
+      "Access-Control-Allow-Origin": "*",
+    });
+    fs.createReadStream(staticPath).pipe(res);
     return;
   }
 
-const resolved = router.resolve(match.pointer);
-   const templateData = { ...match.params, ...(resolved.data || {}) };
-   const isComposed = resolved.isComposed;
+  // 2. Otherwise fall back to the route matcher.
+  const match = matcher.match(requestPath);
+  if (match.found) {
+    const headers = (file) => ({
+      "Content-Type": contentType(file),
+      "Access-Control-Allow-Origin": "*",
+    });
 
-   try {
-     if (isComposed) {
-       const data = await compose(resolved.target, templateData, { readFile: fs, pathResolve: path.resolve, basePath: demoRoot });
-       res.writeHead(resolved.status || 200, {
-         "Content-Type": resolved.contentType,
-         ...resolved.headers,
-       });
-       res.end(data);
-     } else {
-       const fileDetails = await mapTargetToFile(resolved.target, p, match.routeKey, resolved.folder, match.params);
-       let data = await fs.readFile(fileDetails.filePath);
-       data = data.toString("utf-8");
-       
-       if (resolved.data || Object.keys(match.params).length > 0) {
-         data = router.render(data, templateData);
-       }
-       
-       res.writeHead(resolved.status || 200, {
-         "Content-Type": fileDetails.contentType,
-         ...resolved.headers,
-       });
-       res.end(data);
-     }
-   } catch (err) {
-     res.writeHead(404, { "Content-Type": "text/plain" });
-     res.end("Resource not found");
-   }
- });
+    // 2a. Chunked response: a list of entries rendered and joined in order.
+    if (Array.isArray(match.value)) {
+      const parts = await Promise.all(
+        match.value.map((entry) => renderEntry(entry, match.params))
+      );
+      res.writeHead(200, headers(targetOf(match.value[0])));
+      res.end(parts.join(""));
+      return;
+    }
 
-server.listen(4000, () => {
-  console.log("Demo server running at http://localhost:4000");
-  console.log("Routes:", router.info());
+    // 2b. Templated response: a single { target, struct } entry.
+    if (typeof match.value === "object") {
+      const html = await renderEntry(match.value, match.params);
+      res.writeHead(200, headers(match.value.target));
+      res.end(html);
+      return;
+    }
+
+    // 2c. Plain file path: stream it directly based on its extension.
+    const filePath = path.join(__dirname, match.value);
+    res.writeHead(200, headers(filePath));
+    fs.createReadStream(filePath).pipe(res);
+    return;
+  }
+
+  // 3. Nothing matched: serve the 404 page.
+  res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+  fs.createReadStream(path.join(publicDir, "404.html")).pipe(res);
+});
+
+const port = 7171;
+
+server.listen(port, "localhost", () => {
+  console.log(`Server is running on http://localhost:${port}/`);
 });

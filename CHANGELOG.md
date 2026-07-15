@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.8] - 2026-07-15
+### Changed
+- Restructured the demo to run on the `roution` matcher (`helpers/roution`) instead of the removed `src/` library.
+- Reworked `demo/server.js` resolution order: serve static files first, then match routes, then fall back to `404.html`.
+- Replaced the `data` template property with `struct` (object or `(params) => object` factory) for template data injection.
+- Tidied `demo/public`: removed unrouted files (`docs/`, `storage/`, `render-template.html`) and static article files that shadowed the dynamic `/articles/:slug` route.
+- Updated `README.md` to describe the current structure, `struct` templating, and the static-first resolution flow.
+
+### Added
+- Page composition entries can carry their own per-chunk `struct`.
+
 ## [1.0.7] - 2026-07-05
 ### Added
 - Page composition feature with array target support

@@ -1,1 +1,1 @@
-{"message":"this is demo json"}
+{ "message": "this is demo json", "engine": "roution", "static": true }

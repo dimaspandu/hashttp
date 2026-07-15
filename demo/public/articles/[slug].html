@@ -1,11 +1,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Article: {{slug}}</title>
+    <title>{{title}}</title>
   </head>
   <body>
-    <h1>Article: {{slug}}</h1>
-    <p>This article was loaded dynamically.</p>
-    <a href="/">Back to home</a>
+    <h1>{{title}}</h1>
+    <p>Rendered from the <code>/articles/:slug</code> template.</p>
+    <p>Slug: <code>{{slug}}</code></p>
+    <p><a href="/articles">Back to articles</a></p>
   </body>
 </html>
