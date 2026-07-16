@@ -146,7 +146,9 @@ The hashttp engine uses `createMatcher` from
 `libs/roution/src/roution.js` for route resolution. The matcher is framework
 agnostic and runtime independent, and supports static lookup, dynamic segments,
 query parsing, and an optional `*` wildcard. See
-[`libs/roution/README.md`](libs/roution/README.md) for the full API.
+[`libs/roution/README.md`](libs/roution/README.md) for the full API, or the
+dedicated repository for deeper detail and cross-language ports:
+<https://github.com/dimaspandu/roution>.
 
 ```javascript
 import { createMatcher } from "./libs/roution/src/roution.js";
