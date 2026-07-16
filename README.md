@@ -39,10 +39,11 @@ demo server come in three shapes:
 "/": "public/index.html"
 ```
 
-### Array (page composition)
+### Array (page composition, concat)
 
-Each entry is either a file path or an object with its own `model`. Chunks are
-rendered in order and concatenated into one response.
+A plain array of entries is rendered in order and concatenated into one full
+response. Each entry is either a file path (string) or an object with its own
+`model`.
 
 ```javascript
 "/composed": [
@@ -50,6 +51,26 @@ rendered in order and concatenated into one response.
   "public/greetings.html",
   { "target": "public/footer.html", "model": { "year": new Date().getFullYear() } }
 ]
+```
+
+### Object with `stream` (page composition, streaming)
+
+An object with `stream: true` and a `chunks` array renders and writes each
+chunk sequentially using `Transfer-Encoding: chunked` (like PHP `flush`),
+instead of waiting for the whole page to be built. A chunk may carry its own
+`delay` (milliseconds) applied before it is written, which is useful for
+demonstrating sequential streaming. The first chunk has no delay so the
+response starts immediately.
+
+```javascript
+"/composed-stream": {
+  "stream": true,
+  "chunks": [
+    { "target": "public/header.html", "model": { "title": "Streaming" } },
+    { "target": "public/greetings.html", "delay": 1000 },
+    { "target": "public/footer.html", "model": { "year": 2026 }, "delay": 2000 }
+  ]
+}
 ```
 
 ### Object with `model` (templating)
@@ -136,7 +157,8 @@ Then open <http://localhost:7171/>. Try these paths:
 - `/` — static home page
 - `/articles` — route rendered with a `model`
 - `/articles/hello-world` — dynamic route rendered from `[slug].html`
-- `/composed` — page composed from header + greetings + footer chunks
+- `/composed` — page composed from header + greetings + footer chunks (concat)
+- `/composed-stream` — same composition streamed sequentially with per-chunk `delay`
 - `/data.json` — static JSON file
 - `/missing-route` — fallback `404.html`
 

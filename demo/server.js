@@ -29,6 +29,28 @@ const routes = {
       model: { year: new Date().getFullYear() },
     },
   ],
+  // Streaming mode: chunks are written sequentially (Transfer-Encoding: chunked)
+  // instead of being joined into one full response first. Each chunk may carry
+  // its own `delay` (ms) applied before it is written, for demonstration. The
+  // first chunk has no delay so the response starts immediately.
+  "/composed-stream": {
+    stream: true,
+    chunks: [
+      {
+        target: "public/header.html",
+        model: { title: "Streaming" },
+      },
+      {
+        target: "public/greetings.html",
+        delay: 1000,
+      },
+      {
+        target: "public/footer.html",
+        model: { year: new Date().getFullYear() },
+        delay: 2000,
+      },
+    ],
+  },
 };
 
 createServerFromRoutes(routes, { baseDir: demoDir });

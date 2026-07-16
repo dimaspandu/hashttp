@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-07-16
+### Added
+- Streaming composition mode: route value `{ stream: true, chunks: [...] }` writes each chunk sequentially with `Transfer-Encoding: chunked` instead of joining into one response first.
+- Per-chunk `delay` (milliseconds) for composed routes, applied before the chunk is written, for demonstrating sequential streaming.
+
+### Changed
+- `demo/server.js` adds a `/composed-stream` example showcasing streaming with per-chunk delay.
+- `demo/public/index.html` links to the `/composed-stream` example.
+
 ## [1.0.9] - 2026-07-16
 ### Changed
 - Extracted the hashttp serving engine into `src/hashttp.js` (`createServerFromRoutes`) and moved the route matcher to `libs/roution`.

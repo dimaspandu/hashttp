@@ -106,12 +106,35 @@ export function createServerFromRoutes(routes, options = {}) {
         "Access-Control-Allow-Origin": "*",
       });
 
-      // 2a. Chunked response: a list of entries rendered and joined in order.
-      if (Array.isArray(match.value)) {
+      // 2a. Composed response. A route value can be:
+      //     - an array (default concat) -> render all chunks, join, send once
+      //     - an object { stream: true, chunks: [...] } -> render and write
+      //       each chunk sequentially (Transfer-Encoding: chunked)
+      const composed = Array.isArray(match.value)
+        ? { stream: false, chunks: match.value }
+        : match.value;
+      const isComposed = composed && Array.isArray(composed.chunks);
+      if (isComposed) {
+        const first = composed.chunks[0];
+        res.writeHead(200, headers(targetOf(first)));
+        if (composed.stream) {
+          const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+          // Stream each chunk as soon as it is rendered, in order. A chunk may
+          // carry its own `delay` (ms) applied before it is written, which is
+          // useful for demonstrating sequential streaming.
+          for (let i = 0; i < composed.chunks.length; i++) {
+            const entry = composed.chunks[i];
+            const entryDelay = entry && typeof entry === "object" ? entry.delay : undefined;
+            if (i > 0 && typeof entryDelay === "number") await sleep(entryDelay);
+            const chunk = await renderEntry(entry, match.params, baseDir);
+            res.write(chunk);
+          }
+          res.end();
+          return;
+        }
         const parts = await Promise.all(
-          match.value.map((entry) => renderEntry(entry, match.params, baseDir))
+          composed.chunks.map((entry) => renderEntry(entry, match.params, baseDir))
         );
-        res.writeHead(200, headers(targetOf(match.value[0])));
         res.end(parts.join(""));
         return;
       }
