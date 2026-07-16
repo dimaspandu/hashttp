@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2026-07-16
+### Changed
+- Extracted the hashttp serving engine into `src/hashttp.js` (`createServerFromRoutes`) and moved the route matcher to `libs/roution`.
+- Simplified `demo/server.js` to route definitions plus a single `createServerFromRoutes(routes)` call.
+- Renamed the template data property from `struct` to `model` (object or `(params) => object` factory) across the engine, demo, and docs.
+- Updated README structure and usage to reflect the engine/library split.
+
 ## [1.0.8] - 2026-07-15
 ### Changed
 - Restructured the demo to run on the `roution` matcher (`helpers/roution`) instead of the removed `src/` library.

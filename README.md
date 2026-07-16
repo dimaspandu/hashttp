@@ -6,11 +6,12 @@ websites with dynamic routes, and small SPAs. The matching core is
 [`roution`](helpers/roution/README.md), a tiny route-resolution engine with zero
 runtime dependencies.
 
-This repository contains two parts:
+This repository contains three parts:
 
-- `helpers/roution` — the reusable route matcher (`createMatcher`).
-- `demo/` — a runnable, zero-dependency HTTP server that shows how the matcher
-  is wired to file serving, page composition, and templating.
+- `src/hashttp.js` — the hashttp serving engine (HTTP server, static serving,
+  templating, and the 404 fallback).
+- `libs/roution` — the reusable route-resolution library (`createMatcher`).
+- `demo/` — a minimal example that defines `routes` and starts the server.
 
 ## How a request is resolved
 
@@ -23,7 +24,7 @@ The demo server (`demo/server.js`) resolves each request in three steps:
    table. A match is served in one of three shapes:
    - a single file (string target),
    - a composed page (array of chunks), or
-   - a template (object with `target` and `struct`).
+   - a template (object with `target` and `model`).
 3. **Fallback** — If nothing matches, `demo/public/404.html` is served with a
    `404` status.
 
@@ -40,33 +41,33 @@ demo server come in three shapes:
 
 ### Array (page composition)
 
-Each entry is either a file path or an object with its own `struct`. Chunks are
+Each entry is either a file path or an object with its own `model`. Chunks are
 rendered in order and concatenated into one response.
 
 ```javascript
 "/composed": [
-  { "target": "public/header.html", "struct": { "title": "Hello, World!" } },
+  { "target": "public/header.html", "model": { "title": "Hello, World!" } },
   "public/greetings.html",
-  { "target": "public/footer.html", "struct": { "year": new Date().getFullYear() } }
+  { "target": "public/footer.html", "model": { "year": new Date().getFullYear() } }
 ]
 ```
 
-### Object with `struct` (templating)
+### Object with `model` (templating)
 
 ```javascript
 "/articles": {
   "target": "public/articles/index.html",
-  "struct": { "title": "Articles" }
+  "model": { "title": "Articles" }
 }
 ```
 
-`struct` may be a plain object or a factory that receives the matched route
+`model` may be a plain object or a factory that receives the matched route
 params, which makes it easy to derive values from dynamic segments:
 
 ```javascript
 "/articles/:slug": {
   "target": "public/articles/[slug].html",
-  "struct": (params) => ({
+  "model": (params) => ({
     "slug": params.slug,
     "title": params.slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   })
@@ -76,7 +77,7 @@ params, which makes it easy to derive values from dynamic segments:
 ## Dynamic routes
 
 Use `:name` placeholders (for example `:slug`). Captured values are available as
-`match.params` and can be passed into a `struct` factory.
+`match.params` and can be passed into a `model` factory.
 
 ## Template syntax
 
@@ -88,7 +89,7 @@ Templates use `{{ key }}` placeholders. Missing keys render as an empty string.
 <p>Slug: {{slug}}</p>
 ```
 
-## Project structure
+## Project modelure
 
 ```text
 hashttp/
@@ -97,19 +98,21 @@ hashttp/
 │       ├── src/            # matcher implementation
 │       ├── tests/          # node:test unit tests
 │       └── README.md       # matcher API and usage
+├── src/
+│   └── hashttp.js           # hashttp serving engine
 ├── demo/
-│   ├── server.js           # demo HTTP server
+│   ├── server.js            # demo: routes + createServerFromRoutes
 │   └── public/             # files served by the demo
 │       ├── index.html      # route "/"
 │       ├── 404.html        # fallback page
-│       ├── style.css       # static asset
-│       ├── data.json       # static JSON
-│       ├── header.html     # composed chunk ({{title}})
-│       ├── footer.html     # composed chunk ({{year}})
-│       ├── greetings.html  # composed chunk
+│       ├── style.css        # static asset
+│       ├── data.json        # static JSON
+│       ├── header.html      # composed chunk ({{title}})
+│       ├── footer.html      # composed chunk ({{year}})
+│       ├── greetings.html   # composed chunk
 │       └── articles/
-│           ├── index.html  # route "/articles" ({{title}})
-│           └── [slug].html # route "/articles/:slug" ({{slug}}, {{title}})
+│           ├── index.html   # route "/articles" ({{title}})
+│           └── [slug].html  # route "/articles/:slug" ({{slug}}, {{title}})
 ├── package.json
 ├── README.md
 ├── LICENSE.md
@@ -118,8 +121,9 @@ hashttp/
 
 ## Running the demo
 
-The demo serves `demo/public` first, then falls back to the route table, and
-finally to `404.html`.
+The demo uses `createServerFromRoutes(routes)` from `src/hashttp.js`. The engine
+serves `demo/public` first, then falls back to the route table, and finally to
+`404.html`.
 
 ```bash
 npm run demo
@@ -130,7 +134,7 @@ node demo/server.js
 Then open <http://localhost:7171/>. Try these paths:
 
 - `/` — static home page
-- `/articles` — route rendered with a `struct`
+- `/articles` — route rendered with a `model`
 - `/articles/hello-world` — dynamic route rendered from `[slug].html`
 - `/composed` — page composed from header + greetings + footer chunks
 - `/data.json` — static JSON file
@@ -138,14 +142,14 @@ Then open <http://localhost:7171/>. Try these paths:
 
 ## The roution matcher
 
-The demo server depends only on `createMatcher` from
-`helpers/roution/src/roution.js`. The matcher is framework agnostic and runtime
-independent, and supports static lookup, dynamic segments, query parsing, and an
-optional `*` wildcard. See [`helpers/roution/README.md`](helpers/roution/README.md)
-for the full API.
+The hashttp engine uses `createMatcher` from
+`libs/roution/src/roution.js` for route resolution. The matcher is framework
+agnostic and runtime independent, and supports static lookup, dynamic segments,
+query parsing, and an optional `*` wildcard. See
+[`libs/roution/README.md`](libs/roution/README.md) for the full API.
 
 ```javascript
-import { createMatcher } from "./helpers/roution/src/roution.js";
+import { createMatcher } from "./libs/roution/src/roution.js";
 
 const matcher = createMatcher({
   "/": "public/index.html",
@@ -157,6 +161,27 @@ matcher.match("/articles/javascript?page=1");
 // { found: true, pathname: "/articles/javascript", route: "/articles/:slug",
 //   params: { slug: "javascript" }, query: { page: "1" },
 //   value: "public/articles/[slug].html" }
+```
+
+## Using the engine
+
+```javascript
+import { createServerFromRoutes } from "./src/hashttp.js";
+
+const routes = {
+  "/": "public/index.html",
+  "/articles/:slug": {
+    target: "public/articles/[slug].html",
+    model: (params) => ({ slug: params.slug, title: params.slug })
+  },
+  "/composed": [
+    { target: "public/header.html", model: { title: "Hello" } },
+    "public/greetings.html",
+    { target: "public/footer.html", model: { year: 2026 } }
+  ]
+};
+
+createServerFromRoutes(routes, { baseDir: import.meta.dirname, port: 7171 });
 ```
 
 ## Design principles

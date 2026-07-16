@@ -9,7 +9,7 @@ incoming pathnames and returns structured matching results. It is framework
 agnostic, runtime independent, and has zero runtime dependencies.
 
 For the full specification and cross-language overview, see the
-[root README](../README.md).
+[root README](../../README.md).
 
 ## Requirements
 
