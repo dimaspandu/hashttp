@@ -12,8 +12,8 @@ const routes = {
   },
   "/articles/:slug": {
     target: "public/articles/[slug].html",
-    // `model` can be a plain object or a factory that receives the matched params.
-    model: (params) => ({
+    // `model` can be a plain object or a factory that receives the request context.
+    model: ({ params }) => ({
       slug: params.slug,
       title: params.slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
     }),
@@ -51,10 +51,11 @@ const routes = {
       },
     ],
   },
-  // Route value as a factory/callback: invoked with the matched params and the
-  // parsed query, and must return the real route shape (string, object, or
-  // composed). Useful for deriving the target or model at request time.
-  "/factory/:name": (params, query) => ({
+  // Route value as a factory/callback: invoked with the request context
+  // ({ params, query, pathname }) and must return the real route shape
+  // (string, object, or composed). Useful for deriving the target or model
+  // at request time.
+  "/factory/:name": ({ params, query }) => ({
     target: "public/factory.html",
     model: {
       name: params.name,

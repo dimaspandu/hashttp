@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-07-17
+### Changed
+- Callbacks (route value factory and `model` factory) now receive a single
+  request context object `{ params, query, pathname }` instead of positional
+  arguments. The context is destructurable, e.g. `({ params, query }) => ...`.
+  This unifies both callbacks under one convention and is a breaking change
+  for code using the previous `(params, query)` / `(params)` signatures.
+
 ## [1.1.1] - 2026-07-17
 ### Added
 - Route value may be a factory/callback: when it is a function, it is invoked with the matched `params` and parsed `query` and must return the real route value (string, object, or composed shape).

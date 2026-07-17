@@ -21,9 +21,9 @@ const contentType = (file) =>
   typeMap[path.extname(file).toLowerCase()] || "application/octet-stream";
 
 // Resolve a model definition into a plain data object.
-// A model may be a literal object or a factory that receives the route params.
-function resolveModel(model, params) {
-  if (typeof model === "function") return model(params);
+// A model may be a literal object or a factory that receives the request context.
+function resolveModel(model, ctx) {
+  if (typeof model === "function") return model(ctx);
   return model || {};
 }
 
@@ -35,10 +35,10 @@ function renderTemplate(content, data) {
 }
 
 // Render a single route entry. An entry is either a plain file path (string)
-// or an object of the shape { target, model }.
-async function renderEntry(entry, params, baseDir) {
+// or an object of the shape { target, model }. `ctx` is the request context.
+async function renderEntry(entry, ctx, baseDir) {
   const target = typeof entry === "string" ? entry : entry.target;
-  const data = typeof entry === "string" ? {} : resolveModel(entry.model, params);
+  const data = typeof entry === "string" ? {} : resolveModel(entry.model, ctx);
   const content = await fs.promises.readFile(path.join(baseDir, target), "utf8");
   return renderTemplate(content, data);
 }
@@ -108,12 +108,16 @@ export function createServerFromRoutes(routes, options = {}) {
         "Access-Control-Allow-Origin": "*",
       });
 
+      // Request context passed to factories and model callbacks. Destructurable,
+      // e.g. `({ params, query }) => ...`.
+      const ctx = { params: match.params, query, pathname: requestPath };
+
       // A route value may be a factory/callback: when it is a function, invoke
-      // it with the matched params and parsed query to resolve the real value
-      // (string, object, or composed shape) before serving.
+      // it with the request context to resolve the real value (string, object,
+      // or composed shape) before serving.
       const routeValue =
         typeof match.value === "function"
-          ? match.value(match.params, query)
+          ? match.value(ctx)
           : match.value;
 
       // 2a. Composed response. A route value can be:
@@ -121,8 +125,8 @@ export function createServerFromRoutes(routes, options = {}) {
       //     - an object { stream: true, chunks: [...] } -> render and write
       //       each chunk sequentially (Transfer-Encoding: chunked)
       const composed = Array.isArray(routeValue)
-        ? { stream: false, chunks: match.value }
-        : match.value;
+        ? { stream: false, chunks: routeValue }
+        : routeValue;
       const isComposed = composed && Array.isArray(composed.chunks);
       if (isComposed) {
         const first = composed.chunks[0];
@@ -136,14 +140,14 @@ export function createServerFromRoutes(routes, options = {}) {
             const entry = composed.chunks[i];
             const entryDelay = entry && typeof entry === "object" ? entry.delay : undefined;
             if (i > 0 && typeof entryDelay === "number") await sleep(entryDelay);
-            const chunk = await renderEntry(entry, match.params, baseDir);
+            const chunk = await renderEntry(entry, ctx, baseDir);
             res.write(chunk);
           }
           res.end();
           return;
         }
         const parts = await Promise.all(
-          composed.chunks.map((entry) => renderEntry(entry, match.params, baseDir))
+          composed.chunks.map((entry) => renderEntry(entry, ctx, baseDir))
         );
         res.end(parts.join(""));
         return;
@@ -151,7 +155,7 @@ export function createServerFromRoutes(routes, options = {}) {
 
       // 2b. Templated response: a single { target, model } entry.
       if (typeof routeValue === "object") {
-        const html = await renderEntry(routeValue, match.params, baseDir);
+        const html = await renderEntry(routeValue, ctx, baseDir);
         res.writeHead(200, headers(routeValue.target));
         res.end(html);
         return;

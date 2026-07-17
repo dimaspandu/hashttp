@@ -82,13 +82,14 @@ response starts immediately.
 }
 ```
 
-`model` may be a plain object or a factory that receives the matched route
-params, which makes it easy to derive values from dynamic segments:
+`model` may be a plain object or a factory that receives the request context
+and returns the data object, which makes it easy to derive values from dynamic
+segments:
 
 ```javascript
 "/articles/:slug": {
   "target": "public/articles/[slug].html",
-  "model": (params) => ({
+  "model": ({ params }) => ({
     "slug": params.slug,
     "title": params.slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   })
@@ -97,13 +98,14 @@ params, which makes it easy to derive values from dynamic segments:
 
 ### Route value as a factory/callback
 
-A route value may also be a function. It is invoked with the matched `params`
-and the parsed `query`, and must return the real route value (a string, an
-object with `target`/`model`, or a composed shape). This is handy when the
-target or model needs to be derived at request time.
+A route value may also be a function. It is invoked with the request context
+(`{ params, query, pathname }`) and must return the real route value (a string,
+an object with `target`/`model`, or a composed shape). This is handy when the
+target or model needs to be derived at request time. The context object is
+destructurable, so a callback can take only what it needs.
 
 ```javascript
-"/factory/:name": (params, query) => ({
+"/factory/:name": ({ params, query }) => ({
   "target": "public/factory.html",
   "model": { "name": params.name, "lang": query.lang || "en" }
 })
