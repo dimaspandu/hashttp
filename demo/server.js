@@ -51,6 +51,16 @@ const routes = {
       },
     ],
   },
+  // Route value as a factory/callback: invoked with the matched params and the
+  // parsed query, and must return the real route shape (string, object, or
+  // composed). Useful for deriving the target or model at request time.
+  "/factory/:name": (params, query) => ({
+    target: "public/factory.html",
+    model: {
+      name: params.name,
+      lang: query.lang || "en",
+    },
+  }),
 };
 
 createServerFromRoutes(routes, { baseDir: demoDir });

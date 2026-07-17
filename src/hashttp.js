@@ -84,7 +84,9 @@ export function createServerFromRoutes(routes, options = {}) {
   };
 
   const server = http.createServer(async (req, res) => {
-    const requestPath = new URL(req.url, `http://${req.headers.host}`).pathname;
+    const requestUrl = new URL(req.url, `http://${req.headers.host}`);
+    const requestPath = requestUrl.pathname;
+    const query = Object.fromEntries(requestUrl.searchParams);
 
     // 1. Try to serve the request directly from the public folder.
     //    Safe and existing files are streamed as-is based on their extension.
@@ -106,11 +108,19 @@ export function createServerFromRoutes(routes, options = {}) {
         "Access-Control-Allow-Origin": "*",
       });
 
+      // A route value may be a factory/callback: when it is a function, invoke
+      // it with the matched params and parsed query to resolve the real value
+      // (string, object, or composed shape) before serving.
+      const routeValue =
+        typeof match.value === "function"
+          ? match.value(match.params, query)
+          : match.value;
+
       // 2a. Composed response. A route value can be:
       //     - an array (default concat) -> render all chunks, join, send once
       //     - an object { stream: true, chunks: [...] } -> render and write
       //       each chunk sequentially (Transfer-Encoding: chunked)
-      const composed = Array.isArray(match.value)
+      const composed = Array.isArray(routeValue)
         ? { stream: false, chunks: match.value }
         : match.value;
       const isComposed = composed && Array.isArray(composed.chunks);
@@ -140,15 +150,15 @@ export function createServerFromRoutes(routes, options = {}) {
       }
 
       // 2b. Templated response: a single { target, model } entry.
-      if (typeof match.value === "object") {
-        const html = await renderEntry(match.value, match.params, baseDir);
-        res.writeHead(200, headers(match.value.target));
+      if (typeof routeValue === "object") {
+        const html = await renderEntry(routeValue, match.params, baseDir);
+        res.writeHead(200, headers(routeValue.target));
         res.end(html);
         return;
       }
 
       // 2c. Plain file path: stream it directly based on its extension.
-      const filePath = path.join(baseDir, match.value);
+      const filePath = path.join(baseDir, routeValue);
       res.writeHead(200, headers(filePath));
       fs.createReadStream(filePath).pipe(res);
       return;

@@ -95,6 +95,20 @@ params, which makes it easy to derive values from dynamic segments:
 }
 ```
 
+### Route value as a factory/callback
+
+A route value may also be a function. It is invoked with the matched `params`
+and the parsed `query`, and must return the real route value (a string, an
+object with `target`/`model`, or a composed shape). This is handy when the
+target or model needs to be derived at request time.
+
+```javascript
+"/factory/:name": (params, query) => ({
+  "target": "public/factory.html",
+  "model": { "name": params.name, "lang": query.lang || "en" }
+})
+```
+
 ## Dynamic routes
 
 Use `:name` placeholders (for example `:slug`). Captured values are available as
@@ -159,6 +173,7 @@ Then open <http://localhost:7171/>. Try these paths:
 - `/articles/hello-world` — dynamic route rendered from `[slug].html`
 - `/composed` — page composed from header + greetings + footer chunks (concat)
 - `/composed-stream` — same composition streamed sequentially with per-chunk `delay`
+- `/factory/hello?lang=id` — route value as a callback using params and query
 - `/data.json` — static JSON file
 - `/missing-route` — fallback `404.html`
 

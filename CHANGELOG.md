@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-07-17
+### Added
+- Route value may be a factory/callback: when it is a function, it is invoked with the matched `params` and parsed `query` and must return the real route value (string, object, or composed shape).
+- `demo/server.js` adds a `/factory/:name` example using a callback with params and query, plus `demo/public/factory.html` and a home-page link.
+
+### Fixed
+- Parsed query is now passed to route callbacks (the matcher received a query-stripped pathname, so `query` is parsed from the request URL instead).
+
 ## [1.1.0] - 2026-07-16
 ### Added
 - Streaming composition mode: route value `{ stream: true, chunks: [...] }` writes each chunk sequentially with `Transfer-Encoding: chunked` instead of joining into one response first.
