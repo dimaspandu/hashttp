@@ -22,13 +22,13 @@ const contentType = (file) =>
 
 // Resolve a model definition into a plain data object.
 // A model may be a literal object or a factory that receives the request context.
-function resolveModel(model, ctx) {
+export function resolveModel(model, ctx) {
   if (typeof model === "function") return model(ctx);
   return model || {};
 }
 
 // Substitute `{{ key }}` placeholders with values from the data object.
-function renderTemplate(content, data) {
+export function renderTemplate(content, data) {
   return content.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_, key) =>
     key in data ? String(data[key]) : ""
   );
@@ -36,7 +36,7 @@ function renderTemplate(content, data) {
 
 // Render a single route entry. An entry is either a plain file path (string)
 // or an object of the shape { target, model }. `ctx` is the request context.
-async function renderEntry(entry, ctx, baseDir) {
+export async function renderEntry(entry, ctx, baseDir) {
   const target = typeof entry === "string" ? entry : entry.target;
   const data = typeof entry === "string" ? {} : resolveModel(entry.model, ctx);
   const content = await fs.promises.readFile(path.join(baseDir, target), "utf8");
