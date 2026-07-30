@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-07-30
+### Added
+- `fallback` option for `createServerFromRoutes` to customize the 404 fallback file (default: `404.html`).
+- `demo/README.md` with demo explanation, use case documentation, options table, and directory layout guidance.
+- `demo/public/custom-404.html` for custom fallback demonstration.
+
 ## [1.2.0] - 2026-07-17
 ### Changed
 - Callbacks (route value factory and `model` factory) now receive a single
