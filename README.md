@@ -126,7 +126,7 @@ Templates use `{{ key }}` placeholders. Missing keys render as an empty string.
 <p>Slug: {{slug}}</p>
 ```
 
-## Project modelure
+## Project structure
 
 ```text
 hashttp/
@@ -136,10 +136,13 @@ hashttp/
 │       ├── tests/          # node:test unit tests
 │       └── README.md       # matcher API and usage
 ├── src/
-│   └── hashttp.js           # hashttp serving engine
+│   ├── hashttp.js           # hashttp serving engine
+│   └── README.md            # source documentation
 ├── demo/
 │   ├── server.js            # demo: routes + createServerFromRoutes
-│   └── public/             # files served by the demo
+│   ├── build.js             # static HTML generator
+│   ├── public/             # files served by the demo
+│   └── dist/               # generated static output (gitignored)
 │       ├── index.html      # route "/"
 │       ├── 404.html        # fallback page
 │       ├── style.css        # static asset
@@ -151,6 +154,7 @@ hashttp/
 │           ├── index.html   # route "/articles" ({{title}})
 │           └── [slug].html  # route "/articles/:slug" ({{slug}}, {{title}})
 ├── package.json
+├── .gitignore
 ├── README.md
 ├── LICENSE.md
 └── CHANGELOG.md
@@ -167,6 +171,18 @@ npm run demo
 # or
 node demo/server.js
 ```
+
+### Static generation
+
+To generate static HTML files from the routes:
+
+```bash
+npm run build
+# or
+node demo/build.js
+```
+
+This creates a `demo/dist/` folder with one `.html` file per path.
 
 Then open <http://localhost:7171/>. Try these paths:
 
@@ -303,6 +319,11 @@ URL paths are mapped to file paths by stripping the leading `/` and appending `.
 | `/articles` | `dist/articles.html` |
 | `/articles/hello-world` | `dist/articles/hello-world.html` |
 | `/composed` | `dist/composed.html` |
+
+## Source documentation
+
+See `src/README.md` for detailed documentation of the hashttp
+engine, its exports, architecture, and design principles.
 
 ## Design principles
 
