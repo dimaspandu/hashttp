@@ -50,13 +50,15 @@ const targetOf = (entry) =>
  * Create an HTTP server that resolves each request in three steps:
  *   1. Serve a matching static file from `publicDir` (path-traversal safe).
  *   2. Fall back to the route matcher (single file, composed chunks, or template).
- *   3. Serve `404.html` when nothing matches.
+ *   3. Serve the fallback file (default: `404.html`) when nothing matches.
  *
  * @param {Object<string, any>} routes - Flat route map accepted by the matcher.
  * @param {Object} [options]
+ * @param {string} [options.baseDir] - Base directory for resolving file paths (default: process.cwd()).
  * @param {string} [options.publicDir] - Directory for static files (default: ./public).
  * @param {number} [options.port] - Port to listen on (default: 7171).
  * @param {string} [options.host] - Host to bind (default: localhost).
+ * @param {string} [options.fallback] - Fallback file served when no route or static file matches (default: 404.html).
  * @returns {import("http").Server}
  */
 export function createServerFromRoutes(routes, options = {}) {
@@ -65,6 +67,7 @@ export function createServerFromRoutes(routes, options = {}) {
     publicDir = path.join(baseDir, "public"),
     port = 7171,
     host = "localhost",
+    fallback = "404.html",
   } = options;
 
   const matcher = createMatcher(routes);
@@ -170,7 +173,7 @@ export function createServerFromRoutes(routes, options = {}) {
 
     // 3. Nothing matched: serve the 404 page.
     res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
-    fs.createReadStream(path.join(publicDir, "404.html")).pipe(res);
+    fs.createReadStream(path.join(publicDir, fallback)).pipe(res);
   });
 
   server.listen(port, host, () => {

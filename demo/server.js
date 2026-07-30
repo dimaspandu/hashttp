@@ -64,4 +64,4 @@ const routes = {
   }),
 };
 
-createServerFromRoutes(routes, { baseDir: demoDir });
+createServerFromRoutes(routes, { baseDir: demoDir, fallback: "custom-404.html" });

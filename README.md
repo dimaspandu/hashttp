@@ -225,6 +225,31 @@ const routes = {
 createServerFromRoutes(routes, { baseDir: import.meta.dirname, port: 7171 });
 ```
 
+## Options
+
+`createServerFromRoutes` accepts an optional second argument for
+configuration:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `baseDir` | `string` | `process.cwd()` | Base directory used to resolve all file paths (route targets, static files, fallback). All relative paths are resolved relative to `baseDir`. |
+| `publicDir` | `string` | `<baseDir>/public` | Directory that holds static files (HTML, CSS, JS, JSON, images …). Existing files here are served directly before the route matcher is consulted. |
+| `port` | `number` | `7171` | Port the HTTP server listens on. |
+| `host` | `string` | `"localhost"` | Host the HTTP server binds to. |
+| `fallback` | `string` | `"404.html"` | File served when no route or static file matches. Resolved relative to `publicDir`. |
+
+### Custom fallback
+
+Set `fallback` to a different file name (relative to `publicDir`) to
+serve a custom 404 page:
+
+```javascript
+createServerFromRoutes(routes, {
+  baseDir: import.meta.dirname,
+  fallback: "errors/not-found.html"
+});
+```
+
 ## Design principles
 
 - **Zero dependencies** — only built-in Node.js APIs.
