@@ -14,6 +14,32 @@ node demo/server.js
 
 Then open <http://localhost:7171/>.
 
+## Generate static HTML
+
+To generate static HTML files from the routes, run:
+
+```bash
+npm run build
+# or
+node demo/build.js
+```
+
+This creates a `demo/dist/` folder with one `.html` file per path:
+
+```text
+demo/dist/
+├── index.html
+├── articles.html
+├── articles/
+│   └── hello-world.html
+├── composed.html
+├── composed-stream.html
+└── factory/
+    └── anything.html
+```
+
+Each generated file contains the fully resolved HTML — composed chunks are flattened, streaming routes are rendered as a single file, and factory/callback routes are resolved with the matched params.
+
 ## What the demo covers
 
 The demo (`server.js`) defines a `routes` object and passes it to
@@ -235,7 +261,9 @@ project/
 ```text
 demo/
 ├── server.js            # demo server: routes + createServerFromRoutes
+├── build.js             # static HTML generator
 ├── README.md            # this file
+├── dist/              # generated static files (output of build.js)
 └── public/              # static files served by the demo
     ├── index.html       # route "/"
     ├── 404.html         # fallback page

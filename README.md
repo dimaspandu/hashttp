@@ -250,6 +250,60 @@ createServerFromRoutes(routes, {
 });
 ```
 
+## Static generation
+
+`createStaticFromRoutes` generates static HTML files from the same route
+definitions without starting a server. It is useful for pre-rendering
+sites for deployment or for creating template packages.
+
+```javascript
+import { createStaticFromRoutes } from "./src/hashttp.js";
+
+const routes = {
+  "/": "public/index.html",
+  "/articles/:slug": {
+    target: "public/articles/[slug].html",
+    model: ({ params }) => ({ slug: params.slug, title: params.slug })
+  },
+  "/composed": [
+    { target: "public/header.html", model: { title: "Hello" } },
+    "public/greetings.html",
+    { target: "public/footer.html", model: { year: 2026 } }
+  ]
+};
+
+await createStaticFromRoutes(routes, ["/", "/articles/hello-world", "/composed"], {
+  baseDir: import.meta.dirname,
+  outputDir: "dist"
+});
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `baseDir` | `string` | `process.cwd()` | Base directory for resolving file paths. |
+| `outputDir` | `string` | "dist" | Output directory for generated HTML files. |
+
+### How routes are resolved
+
+- **String target** — the file is read and written as-is.
+- **Object with `target` and `model`** — the template is rendered with the model data.
+- **Array (composed)** — all chunks are rendered and concatenated into one file.
+- **Object with `stream` and `chunks`** — all chunks are rendered and concatenated (streaming is ignored during static generation).
+- **Factory/callback** — invoked with a synthetic context (`{ params, query: {}, pathname }`) and the result is resolved the same way.
+
+### Output path mapping
+
+URL paths are mapped to file paths by stripping the leading `/` and appending `.html`:
+
+| URL path | Output file |
+|---|---|
+| `/` | `dist/index.html` |
+| `/articles` | `dist/articles.html` |
+| `/articles/hello-world` | `dist/articles/hello-world.html` |
+| `/composed` | `dist/composed.html` |
+
 ## Design principles
 
 - **Zero dependencies** — only built-in Node.js APIs.

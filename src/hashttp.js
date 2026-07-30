@@ -184,3 +184,82 @@ export function createServerFromRoutes(routes, options = {}) {
 }
 
 export default createServerFromRoutes;
+
+// Convert a URL path to a file path inside the output directory.
+// "/" -> "dist/index.html", "/articles" -> "dist/articles.html",
+// "/articles/hello-world" -> "dist/articles/hello-world.html".
+const urlPathToFilePath = (urlPath, outputDir) => {
+  const stripped = urlPath.replace(/^\//, "");
+  const fileName = stripped === "" ? "index.html" : stripped + ".html";
+  return path.join(outputDir, fileName);
+};
+
+/**
+ * Generate static HTML files from routes for each specified path.
+ *
+ * Unlike `createServerFromRoutes`, this function does not start an HTTP
+ * server. It resolves every route value into a complete HTML string and
+ * writes it to the output directory. Composed and streaming routes are
+ * flattened into a single file; factory/callback routes are invoked with
+ * a synthetic context derived from the matched params.
+ *
+ * @param {Object<string, any>} routes - Flat route map accepted by the matcher.
+ * @param {string[]} paths - Array of URL paths to generate static HTML for.
+ * @param {Object} [options]
+ * @param {string} [options.baseDir] - Base directory for resolving file paths (default: process.cwd()).
+ * @param {string} [options.outputDir] - Output directory for generated files (default: "dist").
+ * @returns {Promise<{generated: string[], errors: string[]}>}
+ */
+export async function createStaticFromRoutes(routes, paths, options = {}) {
+  const {
+    baseDir = process.cwd(),
+    outputDir = "dist",
+  } = options;
+
+  const matcher = createMatcher(routes);
+  const generated = [];
+  const errors = [];
+
+  for (const urlPath of paths) {
+    const match = matcher.match(urlPath);
+    if (!match.found) {
+      errors.push(`No route match for "${urlPath}"`);
+      continue;
+    }
+
+    const ctx = { params: match.params, query: {}, pathname: urlPath };
+    const routeValue =
+      typeof match.value === "function"
+        ? match.value(ctx)
+        : match.value;
+
+    let html;
+
+    if (typeof routeValue === "string") {
+      const filePath = path.join(baseDir, routeValue);
+      html = await fs.promises.readFile(filePath, "utf8");
+    } else if (Array.isArray(routeValue)) {
+      const chunks = await Promise.all(
+        routeValue.map((entry) => renderEntry(entry, ctx, baseDir))
+      );
+      html = chunks.join("");
+    } else if (routeValue && typeof routeValue === "object" && Array.isArray(routeValue.chunks)) {
+      const chunks = await Promise.all(
+        routeValue.chunks.map((entry) => renderEntry(entry, ctx, baseDir))
+      );
+      html = chunks.join("");
+    } else if (typeof routeValue === "object" && routeValue.target) {
+      html = await renderEntry(routeValue, ctx, baseDir);
+    } else {
+      errors.push(`Unresolved route value for "${urlPath}"`);
+      continue;
+    }
+
+    const outputPath = urlPathToFilePath(urlPath, outputDir);
+    await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.promises.writeFile(outputPath, html, "utf8");
+    generated.push(outputPath);
+  }
+
+  return { generated, errors };
+}

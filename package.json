@@ -6,7 +6,8 @@
   "main": "src/index.js",
   "scripts": {
     "test": "node test/matcher.test.js",
-    "demo": "node demo/server.js"
+    "demo": "node demo/server.js",
+    "build": "node demo/build.js"
   },
   "keywords": [
     "router",
