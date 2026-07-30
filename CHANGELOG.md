@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-07-30
+### Added
+- `createStaticFromRoutes(routes, paths, options)` for generating static HTML files from route definitions.
+- `demo/build.js` script demonstrating static generation.
+- `.gitignore` for `node_modules/` and `dist/`.
+
 ## [1.3.0] - 2026-07-30
 ### Added
 - `fallback` option for `createServerFromRoutes` to customize the 404 fallback file (default: `404.html`).
