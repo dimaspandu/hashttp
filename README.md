@@ -3,7 +3,7 @@
 Hashttp is a minimal, dependency-free routing engine that maps request paths to
 files and templates. It is well suited for SEO-friendly static sites, vanilla
 websites with dynamic routes, and small SPAs. The matching core is
-[`roution`](helpers/roution/README.md), a tiny route-resolution engine with zero
+[`roution`](libs/roution/README.md), a tiny route-resolution engine with zero
 runtime dependencies.
 
 This repository contains three parts:
@@ -11,7 +11,7 @@ This repository contains three parts:
 - `src/hashttp.js` — the hashttp serving engine (HTTP server, static serving,
   templating, and the 404 fallback).
 - `libs/roution` — the reusable route-resolution library (`createMatcher`).
-- `demo/` — a minimal example that defines `routes` and starts the server.
+- `demo/` — a minimal example with `server.js` (dev server) and `build.js` (static generation).
 
 ## How a request is resolved
 
@@ -130,7 +130,7 @@ Templates use `{{ key }}` placeholders. Missing keys render as an empty string.
 
 ```text
 hashttp/
-├── helpers/
+├── libs/
 │   └── roution/            # route matcher engine (createMatcher)
 │       ├── src/            # matcher implementation
 │       ├── tests/          # node:test unit tests
@@ -141,18 +141,21 @@ hashttp/
 ├── demo/
 │   ├── server.js            # demo: routes + createServerFromRoutes
 │   ├── build.js             # static HTML generator
-│   ├── public/             # files served by the demo
-│   └── dist/               # generated static output (gitignored)
-│       ├── index.html      # route "/"
-│       ├── 404.html        # fallback page
-│       ├── style.css        # static asset
-│       ├── data.json        # static JSON
-│       ├── header.html      # composed chunk ({{title}})
-│       ├── footer.html      # composed chunk ({{year}})
-│       ├── greetings.html   # composed chunk
-│       └── articles/
-│           ├── index.html   # route "/articles" ({{title}})
-│           └── [slug].html  # route "/articles/:slug" ({{slug}}, {{title}})
+│   ├── public/              # files served by the demo
+│   │   ├── index.html      # route "/"
+│   │   ├── 404.html        # fallback page (unused, replaced by custom-404.html)
+│   │   ├── custom-404.html  # custom fallback (demo/server.js uses this)
+│   │   ├── style.css       # static asset
+│   │   ├── data.json       # static JSON
+│   │   ├── factory.html    # template for the factory route
+│   │   ├── header.html     # composed chunk ({{title}})
+│   │   ├── footer.html     # composed chunk ({{year}})
+│   │   ├── greetings.html  # composed chunk
+│   │   ├── section-item.html # composed chunk ({{content}})
+│   │   └── articles/
+│   │       ├── index.html   # route "/articles" ({{title}})
+│   │       └── [slug].html  # route "/articles/:slug" ({{slug}}, {{title}})
+│   └── dist/                # generated static output (gitignored)
 ├── package.json
 ├── .gitignore
 ├── README.md
@@ -164,7 +167,7 @@ hashttp/
 
 The demo uses `createServerFromRoutes(routes)` from `src/hashttp.js`. The engine
 serves `demo/public` first, then falls back to the route table, and finally to
-`404.html`.
+`custom-404.html`.
 
 ```bash
 npm run demo
@@ -189,11 +192,11 @@ Then open <http://localhost:7171/>. Try these paths:
 - `/` — static home page
 - `/articles` — route rendered with a `model`
 - `/articles/hello-world` — dynamic route rendered from `[slug].html`
-- `/composed` — page composed from header + greetings + footer chunks (concat)
+- `/composed` — page composed from header + greetings + news items + footer chunks
 - `/composed-stream` — same composition streamed sequentially with per-chunk `delay`
 - `/factory/hello?lang=id` — route value as a callback using params and query
 - `/data.json` — static JSON file
-- `/missing-route` — fallback `404.html`
+- `/missing-route` — fallback `custom-404.html` (custom fallback)
 
 ## The roution matcher
 
@@ -229,7 +232,7 @@ const routes = {
   "/": "public/index.html",
   "/articles/:slug": {
     target: "public/articles/[slug].html",
-    model: (params) => ({ slug: params.slug, title: params.slug })
+    model: ({ params }) => ({ slug: params.slug, title: params.slug })
   },
   "/composed": [
     { target: "public/header.html", model: { title: "Hello" } },

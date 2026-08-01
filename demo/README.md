@@ -285,6 +285,7 @@ demo/
     ├── header.html      # composed chunk ({{title}})
     ├── footer.html      # composed chunk ({{year}})
     ├── greetings.html   # composed chunk
+    ├── section-item.html  # composed chunk ({{content}})
     └── articles/
         ├── index.html   # route "/articles" ({{title}})
         └── [slug].html  # route "/articles/:slug" ({{slug}}, {{title}})
