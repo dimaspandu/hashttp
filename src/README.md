@@ -66,7 +66,8 @@ Missing keys render as an empty string.
 ### `renderEntry(entry, ctx, baseDir)`
 
 Renders a single route entry (string path or `{ target, model }` object) to
-an HTML string.
+an HTML string. File contents are memoized in an in-memory cache, so files
+read once are not re-read from disk on subsequent calls.
 
 ## Architecture
 

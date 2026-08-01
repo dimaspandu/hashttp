@@ -85,12 +85,23 @@ is useful for dynamic segments:
 
 An array of entries is rendered in order and concatenated into one full
 response. Each entry is either a file path (string) or an object with
-`target` and `model`.
+`target` and `model`. The `...news.map(...)` spreads multiple entries
+that reuse the same template file (`section-item.html`) with different
+model data.
 
 ```javascript
+const news = [
+  "Lorem ipsum dolor sit amet, ...",
+  "Fusce pulvinar pulvinar elit vel egestas. ...",
+];
+
 "/composed": [
   { target: "public/header.html", model: { title: "Hello, World!" } },
   "public/greetings.html",
+  ...news.map(item => ({
+    target: "public/section-item.html",
+    model: { content: `<p>${item}</p>` }
+  })),
   { target: "public/footer.html", model: { year: new Date().getFullYear() } }
 ]
 ```

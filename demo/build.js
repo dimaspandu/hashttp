@@ -4,6 +4,11 @@ import { createStaticFromRoutes } from "../src/hashttp.js";
 
 const demoDir = path.dirname(fileURLToPath(import.meta.url));
 
+const news = [
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras elementum neque quis scelerisque laoreet. Cras sollicitudin elit eu vulputate vehicula.",
+  "Fusce pulvinar pulvinar elit vel egestas. Suspendisse potenti. Morbi quis dolor erat. Morbi nec turpis quis justo faucibus fringilla. Maecenas porta ante at orci varius sodales.",
+];
+
 const routes = {
   "/": "public/index.html",
   "/articles": {
@@ -23,6 +28,12 @@ const routes = {
       model: { title: "Hello, World!" },
     },
     "public/greetings.html",
+    ...news.map(item => ({
+      target: "public/section-item.html",
+      model: {
+        content: `<p>${item}</p>`
+      },
+    })),
     {
       target: "public/footer.html",
       model: { year: new Date().getFullYear() },

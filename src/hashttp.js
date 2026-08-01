@@ -36,15 +36,25 @@ export function renderTemplate(content, data) {
 
 // Render a single route entry. An entry is either a plain file path (string)
 // or an object of the shape { target, model }. `ctx` is the request context.
+// File contents are memoized in `fileCache` to avoid repeated disk reads.
 export async function renderEntry(entry, ctx, baseDir) {
   const target = typeof entry === "string" ? entry : entry.target;
   const data = typeof entry === "string" ? {} : resolveModel(entry.model, ctx);
-  const content = await fs.promises.readFile(path.join(baseDir, target), "utf8");
+  const filePath = path.join(baseDir, target);
+
+  let content = fileCache.get(filePath);
+  if (content === undefined) {
+    content = await fs.promises.readFile(filePath, "utf8");
+    fileCache.set(filePath, content);
+  }
+
   return renderTemplate(content, data);
 }
 
 const targetOf = (entry) =>
   typeof entry === "string" ? entry : entry.target;
+
+const fileCache = new Map();
 
 /**
  * Create an HTTP server that resolves each request in three steps:
@@ -236,8 +246,7 @@ export async function createStaticFromRoutes(routes, paths, options = {}) {
     let html;
 
     if (typeof routeValue === "string") {
-      const filePath = path.join(baseDir, routeValue);
-      html = await fs.promises.readFile(filePath, "utf8");
+      html = await renderEntry(routeValue, ctx, baseDir);
     } else if (Array.isArray(routeValue)) {
       const chunks = await Promise.all(
         routeValue.map((entry) => renderEntry(entry, ctx, baseDir))
