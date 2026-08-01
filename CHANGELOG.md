@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-08-01
+### Added
+- File content memoization in `renderEntry`: file contents are cached in an
+  in-memory `Map` to avoid repeated disk reads across requests and routes.
+- `demo/public/section-item.html` template reused across multiple composed
+  chunks with different model data.
+
+### Changed
+- `createStaticFromRoutes` now routes string targets through `renderEntry`
+  so generated files benefit from the same file cache.
+- `demo/build.js` routes synced with `demo/server.js` (news array, section items).
+- `demo/README.md` and `src/README.md` updated to document caching behavior.
+
+## [1.5.0] - 2026-07-30
+### Removed
+- `dist/server.js` — replaced by using a live server extension to preview
+  generated static files.
+
+### Changed
+- `.gitignore` updated to ignore entire `dist/` and `demo/dist/` folders.
+
 ## [1.4.0] - 2026-07-30
 ### Added
 - `createStaticFromRoutes(routes, paths, options)` for generating static HTML files from route definitions.
